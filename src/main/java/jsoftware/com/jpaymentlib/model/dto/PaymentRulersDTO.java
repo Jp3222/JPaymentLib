@@ -55,6 +55,18 @@ public class PaymentRulersDTO extends JDBMapObject {
         return Func.nullSafeToString(get("value"));
     }
 
+    public String getRound() {
+        return Func.nullSafeToString(get("round"));
+    }
+
+    public String getApplyRulers() {
+        return Func.nullSafeToString(get("apply_rulers"));
+    }
+
+    public String getRounUp() {
+        return Func.nullSafeToString(get("round_up"));
+    }
+
     public String getApplyDiscount() {
         return Func.nullSafeToString(get("apply_discount"));
     }
@@ -112,4 +124,5 @@ public class PaymentRulersDTO extends JDBMapObject {
         // Garantiza una salida segura en tus logs de Log4j2 sin riesgo de NullPointerException
         return (values != null) ? values.toString() : "{}";
     }
+
 }
