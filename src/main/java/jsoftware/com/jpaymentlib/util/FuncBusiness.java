@@ -1,6 +1,9 @@
 package jsoftware.com.jpaymentlib.util;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.MathContext;
+import java.math.RoundingMode;
 
 /**
  * Utilería de cálculos aritméticos y reglas financieras para el motor de
@@ -68,5 +71,36 @@ public class FuncBusiness {
 
         // Si no es variable, el importe base se mantiene intacto (multiplicado por 1 implícito)
         return a;
+    }
+
+    /**
+     * Función que redondea un importe en base a las banderas activas de
+     * configuración.
+     *
+     * @param base - Monto base en formato String.
+     * @param round - Bandera que indica si el monto aplica redondeo ("1",
+     * "true", "S", etc.).
+     * @param up - Bandera que indica si el redondeo es hacia arriba (CEILING) o
+     * estándar (HALF_UP).
+     * @return El importe procesado como BigDecimal con 2 decimales (o escala 0
+     * si es redondeo a enteros).
+     */
+    public static BigDecimal round(String base, String round, String up) {
+        // Conversión segura de la cadena recibida
+        BigDecimal monto = safeBigDecimal(base);
+
+        // Si la bandera de redondeo no está activa, retornamos el valor original sin modificar
+        if (!isApply(round)) {
+            return monto;
+        }
+
+        // Definimos la regla de redondeo según la bandera 'up'
+        // 'up' activo -> CEILING (Redondea siempre hacia el infinito positivo / arriba)
+        // 'up' inactivo -> HALF_UP (Redondeo aritmético estándar)
+        RoundingMode modoRedondeo = isApply(up) ? RoundingMode.CEILING : RoundingMode.HALF_UP;
+
+        // Aplicamos la escala requerida (ej. 0 para enteros o 2 para centavos finales)
+        // NOTA: Cambia la escala a 0 si tu lógica de cobro requiere ajustar a enteros.
+        return monto.setScale(2, modoRedondeo);
     }
 }
