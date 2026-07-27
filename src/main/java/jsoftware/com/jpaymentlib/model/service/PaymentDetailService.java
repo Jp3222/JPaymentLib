@@ -4,6 +4,7 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import jsoftware.com.jpaymentlib.model.dao.PaymentConceptDAO;
 import jsoftware.com.jpaymentlib.model.dao.PaymentImportDAO;
 import jsoftware.com.jpaymentlib.model.dao.PaymentRulersDAO;
@@ -16,6 +17,7 @@ import jsoftware.com.jpaymentlib.model.dto.PaymentSpecificationDTO;
 import jsoftware.com.jpaymentlib.model.dto.wrp.PaymentSpecificationWrapperDTO;
 import jsoftware.com.jpaymentlib.model.exp.PaymentException;
 import jsoftware.com.jpaymentlib.model.l4b.Payment;
+import jsoftware.com.jpaymentlib.util.Func;
 import jsoftware.com.jutil.db.JDBConnection;
 
 /**
@@ -27,46 +29,38 @@ import jsoftware.com.jutil.db.JDBConnection;
  */
 public class PaymentDetailService {
 
-    private final PaymentSpecificationDAO dao;
+    private final PaymentSpecificationDAO specification_dao;
     private final PaymentConceptDAO concept_dao;
     private final PaymentRulersDAO rulers_dao;
     private final PaymentImportDAO imports_dao;
 
     public PaymentDetailService(boolean flag_dev, String name_module) {
-        dao = new PaymentSpecificationDAO();
+        specification_dao = new PaymentSpecificationDAO();
         concept_dao = new PaymentConceptDAO(flag_dev, name_module);
         rulers_dao = new PaymentRulersDAO();
         imports_dao = new PaymentImportDAO();
     }
 
-    public List<PaymentDetailDTO> getDetailList(JDBConnection connection, List<Integer> concept_list) throws PaymentException, SQLException {
-        List<PaymentSpecificationWrapperDTO> list = new ArrayList<>();
+    /**
+     * Este metodo construye una lista de detalles de pago, a partir de una
+     * lista de especificaciones de pago, la funcion implementa unicamente la
+     * logica para el pago de un tramite.
+     * <br>
+     * <br>
+     * A pertir de esta lista, se construye la cabezera de pago
+     *
+     * @param connection - conexion activa de base de datos.
+     * @param specification_list - Lista de ID's de las especificaciones a pagar
+     * @return una lista de detalles de pago, en otro caso una lista vacia
+     * @throws PaymentException
+     * @throws SQLException
+     */
+    public List<PaymentDetailDTO> getDetailList(JDBConnection connection, List<Integer> specification_list) throws PaymentException, SQLException {
+        //OBTENCION DE ESPECIFICACIONES
+        List<PaymentSpecificationWrapperDTO> list = getPaymentSpecification(connection, specification_list);
+
+        //LISTA DE DETALLES, EN CASO DE SALIR MAL, SE RETORNA VACIA
         List<PaymentDetailDTO> details = new ArrayList<>();
-
-        // 1. SE OBTIENEN LAS ESPECIFICACIONES DE LOS CONCEPTOS SOLICITADOS
-        List<PaymentSpecificationDTO> specifications = dao.getConceptList(connection, concept_list);
-
-        for (PaymentSpecificationDTO spec : specifications) {
-            // Nota: Se cambia concept_list por el ID específico del concepto de esta especificación
-            int currentConceptId = Integer.parseInt(spec.getConceptId());
-
-            // SE BUSCA EL CONCEPTO INDIVIDUAL
-            PaymentConceptDTO concept = concept_dao.getConceptList(connection, concept_list);
-            // SE BUSCA SU IMPORTE
-            PaymentImportDTO imports = imports_dao.getRulerList(connection, concept_list);
-            // SE BUSCA SUS REGLAS
-            PaymentRulersDTO ruler = rulers_dao.getRulerList(connection, concept_list);
-
-            // SE CREA Y LLENA EL ENVOLTORIO
-            PaymentSpecificationWrapperDTO wrp = new PaymentSpecificationWrapperDTO();
-            wrp.setSpecification(spec);
-            wrp.setConcepts(concept);
-            wrp.setImports(imports);
-            wrp.setRulers(ruler);
-
-            // SOLUCIÓN CRÍTICA 1: Se añade el wrapper a la lista para que el siguiente bucle tenga datos
-            list.add(wrp);
-        }
 
         // 2. LÓGICA DE COBRO Y CONSTRUCCIÓN DE DETALLES
         for (PaymentSpecificationWrapperDTO i : list) {
@@ -81,7 +75,7 @@ public class PaymentDetailService {
 
             // Validación de vigencia: Fecha de fin
             LocalDate date_end = LocalDate.parse(specification.getDateEndApplication());
-            if (date_end.isBefore(now)) {
+            if (date_end != null && date_end.isBefore(now)) {
                 continue;
             }
 
@@ -94,8 +88,9 @@ public class PaymentDetailService {
 
             // SE INICIA EL ARMADO DEL DTO DE DETALLE (Mapeo flexible basado en Strings)
             PaymentDetailDTO detail = new PaymentDetailDTO();
-            detail.put("payment_concept_id", concept.getId());
             detail.put("specification_id", specification.getId()); // SOLUCIÓN 4: Extraer el ID plano
+            detail.put("payment_concept_id", concept.getId());
+            detail.put("fiscal_year", String.valueOf(now.getYear()));
 
             PaymentImportDTO imports = i.getImports();
 
@@ -116,5 +111,53 @@ public class PaymentDetailService {
         }
 
         return details;
+    }
+
+    /**
+     * Es
+     * @param connection
+     * @param specification_id
+     * @param months_list
+     * @return
+     */
+    public List<PaymentDetailDTO> getDetailList(JDBConnection connection, String specification_id, List<String> months_list) {
+        return null;
+    }
+
+    public List<PaymentSpecificationWrapperDTO> getPaymentSpecification(JDBConnection connection, List<Integer> specification_list) throws SQLException, PaymentException {
+        List<PaymentSpecificationWrapperDTO> list = new ArrayList<>();
+
+        // 1. SE OBTIENEN LAS ESPECIFICACIONES DE LOS CONCEPTOS SOLICITADOS
+        List<PaymentSpecificationDTO> specifications = specification_dao.getSpecificationList(connection, specification_list);
+
+        for (PaymentSpecificationDTO specification : specifications) {
+            // SE BUSCA EL CONCEPTO INDIVIDUAL
+            Optional<PaymentConceptDTO> concept = concept_dao.getConceptList(connection, specification.getConceptId());
+            if (concept.isEmpty()) {
+                throw new PaymentException(1, "CONCEPTO DE PAGO NO EXISTENTE");
+            }
+
+            // SE BUSCA SU IMPORTE
+            Optional<PaymentImportDTO> imports = imports_dao.getImportList(connection, specification.getImportId());
+            if (concept.isEmpty()) {
+                throw new PaymentException(1, "IMPORTES DE PAGO NO EXISTENTES");
+            }
+
+            // SE BUSCA SUS REGLAS
+            Optional<PaymentRulersDTO> ruler = rulers_dao.getRulerList(connection, specification.getRulerId());
+            if (concept.isEmpty()) {
+                throw new PaymentException(1, "REGLAS DE PAGO NO EXISTENTES");
+            }
+
+            // SE CREA Y LLENA EL ENVOLTORIO
+            PaymentSpecificationWrapperDTO wrp = new PaymentSpecificationWrapperDTO();
+            wrp.setSpecification(specification);
+            wrp.setConcepts(concept.get());
+            wrp.setImports(imports.get());
+            wrp.setRulers(ruler.get());
+            // SOLUCIÓN CRÍTICA 1: Se añade el wrapper a la lista para que el siguiente bucle tenga datos
+            list.add(wrp);
+        }
+        return list;
     }
 }
