@@ -10,6 +10,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import jsoftware.com.jpaymentlib.model.dto.PaymentImportDTO;
 import jsoftware.com.jutil.db.JDBConnection;
 
@@ -19,26 +20,27 @@ import jsoftware.com.jutil.db.JDBConnection;
  */
 public class PaymentImportDAO {
 
-    public PaymentImportDTO getRulerList(JDBConnection connection, List<Integer> concept_list) throws SQLException {
-        List<PaymentImportDTO> list = new ArrayList<>(concept_list.size());
-        String query = "SELECT * FROM pym_payment_concept WHERE id IN(" + list.toString().replace('[', '(').replace(']', ')') + ") AND status = 1";
+    public Optional<PaymentImportDTO> getImportList(JDBConnection connection, String concept_id) throws SQLException {
+        String query = "SELECT * FROM pym_payment_concept WHERE id = ? AND status = 1";
+        Optional<PaymentImportDTO> res = Optional.empty();
         try (PreparedStatement ps = connection.getNewPreparedStatement(query)) {
-            ResultSet rs = ps.executeQuery();
-            ResultSetMetaData md = rs.getMetaData();
-            String[] fields = new String[md.getColumnCount()];
-            for (int i = 0; i < fields.length; i++) {
-                fields[i] = md.getColumnLabel(i + 1);
-            }
-            PaymentImportDTO dto = null;
-            while (rs.next()) {
-                dto = new PaymentImportDTO();
+            ps.setString(1, concept_id);
+            try (ResultSet rs = ps.executeQuery();) {
+                ResultSetMetaData md = rs.getMetaData();
+                String[] fields = new String[md.getColumnCount()];
+                for (int i = 0; i < fields.length; i++) {
+                    fields[i] = md.getColumnLabel(i + 1);
+                }
+                if (!rs.next()) {
+                    return res;
+                }
+                PaymentImportDTO dto = new PaymentImportDTO();
                 for (String i : fields) {
                     dto.put(i, rs.getString(i));
                 }
-
+                res = Optional.of(dto);
+                return res;
             }
-            return dto;
         }
-
     }
 }
