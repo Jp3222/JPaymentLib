@@ -75,20 +75,20 @@ public class Payment {
 
         // 4. Aplicación de Descuento comercial o por campaña
         discount.setApply(rulers.getApplyDiscount());
-        if (discount.isApply()) {
+        if (FuncBusiness.isApply(rulers.getApplyRulers()) && discount.isApply()) {
             total_amount = discount.getTotal(total_amount, imports.getDiscount());
             s_discount = imports.getDiscount();
         }
 
         // 5. Aplicación de Subsidio gubernamental o preferencial
         subsidy.setApply(rulers.getApplySubsidy());
-        if (subsidy.isApply()) {
+        if (FuncBusiness.isApply(rulers.getApplyRulers()) && subsidy.isApply()) {
             total_amount = subsidy.getTotal(total_amount, imports.getSubsidy());
             // Se acumula el monto del subsidio al beneficio total de s_discount
             s_discount = FuncBusiness.surcharge(s_discount, imports.getSubsidy()).toPlainString();
         }
 
-        return total_amount;
+        return FuncBusiness.round(total_amount, rulers.getRound(), rulers.getRounUp()).toPlainString();
     }
 
     /**
