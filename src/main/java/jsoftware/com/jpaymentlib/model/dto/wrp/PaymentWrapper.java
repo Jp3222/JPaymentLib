@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Objects;
 import jsoftware.com.jpaymentlib.model.dto.PaymentDetailDTO;
 import jsoftware.com.jpaymentlib.model.dto.PaymentHeaderDTO;
+import jsoftware.com.jpaymentlib.model.dto.PaymentLines;
 
 /**
  * Envoltorio que contiene la cabezera y la lista de detalles de pago generados
@@ -19,30 +20,36 @@ public class PaymentWrapper {
 
     private final PaymentHeaderDTO header;
     private final List<PaymentDetailDTO> detail;
-
-    public PaymentWrapper() {
-        this.header = new PaymentHeaderDTO();
-        this.detail = new ArrayList<>();
-    }
+    private final PaymentLines line;
 
     public PaymentWrapper(PaymentHeaderDTO header, List<PaymentDetailDTO> detail) {
-        this.header = header;
-        this.detail = detail;
+        this(header, detail, null);
     }
 
-    public List<PaymentDetailDTO> getDetail() {
-        return detail;
+    public PaymentWrapper(PaymentHeaderDTO header, List<PaymentDetailDTO> detail, PaymentLines line) {
+        this.header = header;
+        this.detail = detail;
+        this.line = line;
     }
 
     public PaymentHeaderDTO getHeader() {
         return header;
     }
 
+    public List<PaymentDetailDTO> getDetail() {
+        return detail;
+    }
+
+    public PaymentLines getLine() {
+        return line;
+    }
+
     @Override
     public int hashCode() {
-        int hash = 7;
-        hash = 19 * hash + Objects.hashCode(this.header);
-        hash = 19 * hash + Objects.hashCode(this.detail);
+        int hash = 5;
+        hash = 71 * hash + Objects.hashCode(this.header);
+        hash = 71 * hash + Objects.hashCode(this.detail);
+        hash = 71 * hash + Objects.hashCode(this.line);
         return hash;
     }
 
@@ -61,15 +68,19 @@ public class PaymentWrapper {
         if (!Objects.equals(this.header, other.header)) {
             return false;
         }
-        return Objects.equals(this.detail, other.detail);
+        if (!Objects.equals(this.detail, other.detail)) {
+            return false;
+        }
+        return Objects.equals(this.line, other.line);
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("PaymentWrapper{");
-        sb.append("header=").append(header.toString());
-        sb.append(", detail=").append(detail.toString());
+        sb.append("header=").append(header);
+        sb.append(", detail=").append(detail);
+        sb.append(", line=").append(line);
         sb.append('}');
         return sb.toString();
     }
