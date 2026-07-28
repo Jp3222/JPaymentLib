@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import jsoftware.com.jpaymentlib.model.dao.PaymentConceptDAO;
+import jsoftware.com.jpaymentlib.model.dao.PaymentDetailDAO;
 import jsoftware.com.jpaymentlib.model.dao.PaymentImportDAO;
 import jsoftware.com.jpaymentlib.model.dao.PaymentRulersDAO;
 import jsoftware.com.jpaymentlib.model.dao.PaymentSpecificationDAO;
@@ -34,11 +35,23 @@ public class PaymentDetailService {
     private final PaymentRulersDAO rulers_dao;
     private final PaymentImportDAO imports_dao;
 
+    //
+    private final PaymentDetailDAO pym_detail_dao;
+
     public PaymentDetailService(boolean flag_dev, String name_module) {
         specification_dao = new PaymentSpecificationDAO();
         concept_dao = new PaymentConceptDAO(flag_dev, name_module);
         rulers_dao = new PaymentRulersDAO();
         imports_dao = new PaymentImportDAO();
+        pym_detail_dao = new PaymentDetailDAO(flag_dev, name_module);
+    }
+
+    public boolean save(JDBConnection connection, List<PaymentDetailDTO> list) throws SQLException, PaymentException {
+        boolean res = pym_detail_dao.insert(connection, list);
+        if (!res) {
+            throw new PaymentException(1, "NO PUDO REALIZAR EL REGISTRO DEL PAGO DESGLOSADO");
+        }
+        return res;
     }
 
     /**
@@ -115,6 +128,7 @@ public class PaymentDetailService {
 
     /**
      * Es
+     *
      * @param connection
      * @param specification_id
      * @param months_list
