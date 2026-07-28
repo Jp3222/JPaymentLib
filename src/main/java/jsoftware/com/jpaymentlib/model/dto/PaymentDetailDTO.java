@@ -51,6 +51,10 @@ public class PaymentDetailDTO extends JDBMapObject {
         return Func.nullSafeToString(get("specification_id"));
     }
 
+    public String getDescription() {
+        return Func.nullSafeToString(get("description"));
+    }
+
     public String getPeriodDate() {
         return Func.nullSafeToString(get("period_date"));
     }
