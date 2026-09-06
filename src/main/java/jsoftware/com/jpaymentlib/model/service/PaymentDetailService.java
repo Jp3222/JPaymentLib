@@ -16,9 +16,9 @@ import jsoftware.com.jpaymentlib.model.dto.PaymentImportDTO;
 import jsoftware.com.jpaymentlib.model.dto.PaymentRulersDTO;
 import jsoftware.com.jpaymentlib.model.dto.PaymentSpecificationDTO;
 import jsoftware.com.jpaymentlib.model.dto.wrp.PaymentSpecificationWrapperDTO;
+import jsoftware.com.jpaymentlib.model.dto.wrp.PaymentWrapper;
 import jsoftware.com.jpaymentlib.model.exp.PaymentException;
 import jsoftware.com.jpaymentlib.model.l4b.Payment;
-import jsoftware.com.jpaymentlib.util.Func;
 import jsoftware.com.jutil.db.JDBConnection;
 
 /**
@@ -46,7 +46,7 @@ public class PaymentDetailService {
         pym_detail_dao = new PaymentDetailDAO(flag_dev, name_module);
     }
 
-    public boolean save(JDBConnection connection, List<PaymentDetailDTO> list) throws SQLException, PaymentException {
+    public boolean save(JDBConnection connection, List<PaymentDetailDTO> list) throws SQLException, PaymentException, SQLException, SQLException, SQLException, SQLException, SQLException, SQLException {
         boolean res = pym_detail_dao.insert(connection, list);
         if (!res) {
             throw new PaymentException(1, "NO PUDO REALIZAR EL REGISTRO DEL PAGO DESGLOSADO");
@@ -68,9 +68,15 @@ public class PaymentDetailService {
      * @throws PaymentException
      * @throws SQLException
      */
-    public List<PaymentDetailDTO> getDetailList(JDBConnection connection, List<Integer> specification_list) throws PaymentException, SQLException {
+    public List<PaymentDetailDTO> getDetailList(JDBConnection connection, PaymentWrapper wrp) throws PaymentException, SQLException {
+        if (wrp.getConcept_list().isEmpty()) {
+            throw new PaymentException(1, "LISTA DE ESPECIFICACIONES VACIA");
+        }
         //OBTENCION DE ESPECIFICACIONES
-        List<PaymentSpecificationWrapperDTO> list = getPaymentSpecification(connection, specification_list);
+        List<PaymentSpecificationWrapperDTO> list = getPaymentSpecification(connection, wrp.getConcept_list());
+        if (list.isEmpty()) {
+            throw new PaymentException(2, "LISTA DE ESPECIFICACIONES NO GENERADA");
+        }
 
         //LISTA DE DETALLES, EN CASO DE SALIR MAL, SE RETORNA VACIA
         List<PaymentDetailDTO> details = new ArrayList<>();
@@ -79,17 +85,21 @@ public class PaymentDetailService {
         for (PaymentSpecificationWrapperDTO i : list) {
             PaymentSpecificationDTO specification = i.getSpecification();
             LocalDate now = LocalDate.now();
-
-            // Validación de vigencia: Fecha de inicio
-            LocalDate date_start = LocalDate.parse(specification.getDateStartApplication());
-            if (date_start.isAfter(now)) {
-                continue;
+            
+            if (specification.getDateStartApplication() != null) {
+                // Validación de vigencia: Fecha de inicio
+                LocalDate date_start = LocalDate.parse(specification.getDateStartApplication());
+                if (date_start.isAfter(now)) {
+                    continue;
+                }
             }
-
-            // Validación de vigencia: Fecha de fin
-            LocalDate date_end = LocalDate.parse(specification.getDateEndApplication());
-            if (date_end != null && date_end.isBefore(now)) {
-                continue;
+            
+            if (specification.getDateEndApplication() != null) {
+                // Validación de vigencia: Fecha de fin
+                LocalDate date_end = LocalDate.parse(specification.getDateEndApplication());
+                if (date_end != null && date_end.isBefore(now)) {
+                    continue;
+                }
             }
 
             // Validación de estado del concepto administrativo
@@ -109,18 +119,19 @@ public class PaymentDetailService {
 
             // Instancia del motor analítico
             Payment pym = new Payment(i);
-            String total = pym.calculation();
+            String total = pym.calculation().toPlainString();
 
             // LÓGICA DE ASIGNACIÓN DE IMPORTES PROCESADOS POR EL MOTOR
             detail.put("quantity", pym.isVariable() ? imports.getUnits() : "1");
             detail.put("unit_price", imports.getAmount());
-            detail.put("subtotal", pym.getSubTotal());
-            detail.put("surcharge", pym.getSSurcharge());
-            detail.put("discount", pym.getSDiscount());
+            detail.put("subtotal", pym.getSub_total().toPlainString());
+            detail.put("surcharge", pym.getSurcharge().toPlainString());
+            detail.put("discount", pym.getDiscount().toPlainString());
             detail.put("total_amount", total);
             detail.put("fiscal_year", String.valueOf(now.getYear()));
             // SOLUCIÓN CRÍTICA 3: Agregar el detalle construido a la lista final de retorno
             details.add(detail);
+            
         }
 
         return details;

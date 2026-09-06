@@ -1,8 +1,6 @@
 package jsoftware.com.jpaymentlib.util;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.math.MathContext;
 import java.math.RoundingMode;
 
 /**
@@ -12,9 +10,16 @@ import java.math.RoundingMode;
  *
  * @author juanp
  * @since 2026-07-18
- * @version 1.1
+ * @version 1.2
  */
 public class FuncBusiness {
+
+    /**
+     * Constructor privado para prevenir la instanciación de la clase
+     * utilitaria.
+     */
+    private FuncBusiness() {
+    }
 
     /**
      * Evalúa si una bandera de negocio está activa (valor numérico "1").
@@ -29,78 +34,65 @@ public class FuncBusiness {
     /**
      * Realiza una conversión segura de String a BigDecimal. Si la cadena es
      * inválida, nula o vacía, retorna un valor por defecto (ZERO).
+     *
+     * @param value Cadena con el número a convertir.
+     * @return Instancia de BigDecimal con el valor parseado o ZERO si falla.
      */
-    private static BigDecimal safeBigDecimal(String value) {
+    public static BigDecimal safeBigDecimal(String value) {
         if (Func.isNotNullEmptyBlank(value)) {
             try {
                 return new BigDecimal(value.trim());
             } catch (NumberFormatException e) {
-                // Podrías añadir un log aquí si es necesario registrar el fallo de casteo
                 return BigDecimal.ZERO;
             }
         }
         return BigDecimal.ZERO;
     }
 
-    public static BigDecimal surcharge(String base, String surcharge) {
-        BigDecimal a = safeBigDecimal(base);
-        BigDecimal b = safeBigDecimal(surcharge);
-        return a.add(b);
+    public static BigDecimal surcharge(BigDecimal base, BigDecimal surcharge) {
+        return base.add(surcharge);
     }
 
-    public static BigDecimal subsidy(String base, String subsidy) {
-        BigDecimal a = safeBigDecimal(base);
-        BigDecimal b = safeBigDecimal(subsidy);
-        return a.subtract(b);
+    public static BigDecimal subsidy(BigDecimal base, BigDecimal subsidy) {
+        return base.subtract(subsidy);
     }
 
-    public static BigDecimal discount(String base, String discount) {
-        BigDecimal a = safeBigDecimal(base);
-        BigDecimal b = safeBigDecimal(discount);
-        return a.subtract(b);
+    public static BigDecimal discount(BigDecimal base, BigDecimal discount) {
+        return base.subtract(discount);
     }
 
-    public static BigDecimal variable(String base, String variable, String items) {
-        BigDecimal a = safeBigDecimal(base);
-
-        // Si la bandera variable está activa, multiplicamos la base por la cantidad de items/unidades
-        if (isApply(variable)) {
-            BigDecimal b = safeBigDecimal(items);
-            return a.multiply(b);
+    public static BigDecimal variable(BigDecimal base, boolean variable, BigDecimal items) {
+        // Validación defensiva contra null y verificación de cantidad mayor a cero
+        if (variable && items != null && items.compareTo(BigDecimal.ZERO) > 0) {
+            return base.multiply(items);
         }
-
-        // Si no es variable, el importe base se mantiene intacto (multiplicado por 1 implícito)
-        return a;
+        return base;
     }
 
     /**
-     * Función que redondea un importe en base a las banderas activas de
-     * configuración.
+     * Redondea un importe en base a las banderas activas de configuración.
      *
-     * @param base - Monto base en formato String.
-     * @param round - Bandera que indica si el monto aplica redondeo ("1",
-     * "true", "S", etc.).
-     * @param up - Bandera que indica si el redondeo es hacia arriba (CEILING) o
-     * estándar (HALF_UP).
-     * @return El importe procesado como BigDecimal con 2 decimales (o escala 0
-     * si es redondeo a enteros).
+     * @param base Monto base a procesar.
+     * @param round Bandera de redondeo (true si se debe redondear).
+     * @param up Indica si el redondeo es hacia arriba (CEILING) o estándar
+     * (HALF_UP).
+     * @return El importe procesado como BigDecimal con 2 decimales ajustados.
      */
-    public static BigDecimal round(String base, String round, String up) {
-        // Conversión segura de la cadena recibida
-        BigDecimal monto = safeBigDecimal(base);
+    public static BigDecimal round(BigDecimal base, boolean round, boolean up) {
+        if (base == null) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
 
-        // Si la bandera de redondeo no está activa, retornamos el valor original sin modificar
-        if (!isApply(round)) {
-            return monto;
+        // CORRECCIÓN CRÍTICA: Si la bandera de redondeo NO está activa, 
+        // se devuelve el monto original sin alterar la regla de redondeo especial
+        if (!round) {
+            return base;
         }
 
         // Definimos la regla de redondeo según la bandera 'up'
         // 'up' activo -> CEILING (Redondea siempre hacia el infinito positivo / arriba)
         // 'up' inactivo -> HALF_UP (Redondeo aritmético estándar)
-        RoundingMode modoRedondeo = isApply(up) ? RoundingMode.CEILING : RoundingMode.HALF_UP;
-
-        // Aplicamos la escala requerida (ej. 0 para enteros o 2 para centavos finales)
-        // NOTA: Cambia la escala a 0 si tu lógica de cobro requiere ajustar a enteros.
-        return monto.setScale(2, modoRedondeo);
+        RoundingMode modoRedondeo = up ? RoundingMode.CEILING : RoundingMode.HALF_UP;
+        return base.setScale(2, modoRedondeo);
     }
 }

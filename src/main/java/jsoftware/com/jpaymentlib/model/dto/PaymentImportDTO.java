@@ -97,4 +97,8 @@ public class PaymentImportDTO extends JDBMapObject {
         // Garantiza una salida segura en tus logs de Log4j2 sin riesgo de NullPointerException
         return (values != null) ? values.toString() : "{}";
     }
+
+    public String getOfficeId() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
 }

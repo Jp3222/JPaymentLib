@@ -15,13 +15,13 @@ import jsoftware.com.jpaymentlib.util.FuncBusiness;
 public class Surcharge extends AbstractCalculation {
 
     @Override
-    public String getTotal(String base, String amount) {
+    public BigDecimal getTotal(BigDecimal base, BigDecimal amount) {
         // Optimización: Retorno inmediato para evitar instanciaciones innecesarias si no aplica
         if (!isApply()) {
             return base;
         }
         BigDecimal surcharge = FuncBusiness.surcharge(base, amount);
-        return surcharge.toPlainString();
+        return surcharge;
     }
 
 }

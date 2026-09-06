@@ -4,8 +4,6 @@
  */
 package jsoftware.com.jpaymentlib.model.model;
 
-import jsoftware.com.jpaymentlib.util.FuncBusiness;
-
 /**
  *
  * @author juanp
@@ -17,8 +15,8 @@ public abstract class AbstractCalculation implements CalculationModel {
     }
     
     @Override
-    public void setApply(String apply) {
-        this.apply = FuncBusiness.isApply(apply);
+    public void setApply(boolean apply) {
+        this.apply = apply;
     }
 
     @Override

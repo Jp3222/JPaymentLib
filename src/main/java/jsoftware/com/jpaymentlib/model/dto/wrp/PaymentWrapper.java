@@ -7,9 +7,10 @@ package jsoftware.com.jpaymentlib.model.dto.wrp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import jsoftware.com.jpaymentlib.model.dto.PaymentDTO;
 import jsoftware.com.jpaymentlib.model.dto.PaymentDetailDTO;
 import jsoftware.com.jpaymentlib.model.dto.PaymentHeaderDTO;
-import jsoftware.com.jpaymentlib.model.dto.PaymentLines;
+import jsoftware.com.jpaymentlib.model.dto.PaymentLinesDTO;
 
 /**
  * Envoltorio que contiene la cabezera y la lista de detalles de pago generados
@@ -18,38 +19,75 @@ import jsoftware.com.jpaymentlib.model.dto.PaymentLines;
  */
 public class PaymentWrapper {
 
-    private final PaymentHeaderDTO header;
-    private final List<PaymentDetailDTO> detail;
-    private final PaymentLines line;
+    private List<Integer> concept_list;
+    private PaymentHeaderDTO header;
+    private List<PaymentDetailDTO> detail;
+    private PaymentLinesDTO line;
+    private PaymentDTO payment;
+    private PaymentSpecificationWrapperDTO specification_list;
 
-    public PaymentWrapper(PaymentHeaderDTO header, List<PaymentDetailDTO> detail) {
-        this(header, detail, null);
+    public PaymentWrapper() {
+        this.header = new PaymentHeaderDTO();
+        this.detail = new ArrayList<>();
+        this.line = new PaymentLinesDTO();
     }
 
-    public PaymentWrapper(PaymentHeaderDTO header, List<PaymentDetailDTO> detail, PaymentLines line) {
-        this.header = header;
-        this.detail = detail;
-        this.line = line;
+    public List<Integer> getConcept_list() {
+        return concept_list;
+    }
+
+    public void setConcept_list(List<Integer> concept_list) {
+        this.concept_list = concept_list;
     }
 
     public PaymentHeaderDTO getHeader() {
         return header;
     }
 
+    public void setHeader(PaymentHeaderDTO header) {
+        this.header = header;
+    }
+
     public List<PaymentDetailDTO> getDetail() {
         return detail;
     }
 
-    public PaymentLines getLine() {
+    public void setDetail(List<PaymentDetailDTO> detail) {
+        this.detail = detail;
+    }
+
+    public PaymentLinesDTO getLine() {
         return line;
+    }
+
+    public void setLine(PaymentLinesDTO line) {
+        this.line = line;
+    }
+
+    public PaymentDTO getPayment() {
+        return payment;
+    }
+
+    public void setPayment(PaymentDTO payment) {
+        this.payment = payment;
+    }
+
+    public PaymentSpecificationWrapperDTO getSpecification_list() {
+        return specification_list;
+    }
+
+    public void setSpecification_list(PaymentSpecificationWrapperDTO specification_list) {
+        this.specification_list = specification_list;
     }
 
     @Override
     public int hashCode() {
-        int hash = 5;
-        hash = 71 * hash + Objects.hashCode(this.header);
-        hash = 71 * hash + Objects.hashCode(this.detail);
-        hash = 71 * hash + Objects.hashCode(this.line);
+        int hash = 3;
+        hash = 61 * hash + Objects.hashCode(this.header);
+        hash = 61 * hash + Objects.hashCode(this.detail);
+        hash = 61 * hash + Objects.hashCode(this.line);
+        hash = 61 * hash + Objects.hashCode(this.payment);
+        hash = 61 * hash + Objects.hashCode(this.specification_list);
         return hash;
     }
 
@@ -71,7 +109,13 @@ public class PaymentWrapper {
         if (!Objects.equals(this.detail, other.detail)) {
             return false;
         }
-        return Objects.equals(this.line, other.line);
+        if (!Objects.equals(this.line, other.line)) {
+            return false;
+        }
+        if (!Objects.equals(this.payment, other.payment)) {
+            return false;
+        }
+        return Objects.equals(this.specification_list, other.specification_list);
     }
 
     @Override
@@ -81,6 +125,8 @@ public class PaymentWrapper {
         sb.append("header=").append(header);
         sb.append(", detail=").append(detail);
         sb.append(", line=").append(line);
+        sb.append(", payment=").append(payment);
+        sb.append(", dto=").append(specification_list);
         sb.append('}');
         return sb.toString();
     }

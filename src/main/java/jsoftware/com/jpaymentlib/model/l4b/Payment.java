@@ -1,10 +1,12 @@
 package jsoftware.com.jpaymentlib.model.l4b;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import jsoftware.com.jpaymentlib.model.dto.PaymentImportDTO;
 import jsoftware.com.jpaymentlib.model.dto.PaymentRulersDTO;
 import jsoftware.com.jpaymentlib.model.dto.wrp.PaymentSpecificationWrapperDTO;
+import jsoftware.com.jpaymentlib.model.exp.PaymentException;
+import jsoftware.com.jpaymentlib.util.Func;
 import jsoftware.com.jpaymentlib.util.FuncBusiness;
 
 /**
@@ -14,129 +16,162 @@ import jsoftware.com.jpaymentlib.util.FuncBusiness;
  *
  * @author JUAN PABLO CAMPOS CASASANERO
  * @since 2026-07-18
- * @version 1.3
+ * @version 1.5
  */
 public class Payment {
 
-    private final Subsidy subsidy;
-    private final Discount discount;
-    private final Surcharge surcharge;
+    private final Subsidy lbl_subsidy;
+    private final Discount lbl_discount;
+    private final Surcharge lbl_surcharge;
     private final PaymentSpecificationWrapperDTO dto;
     private boolean variable;
-    private String sub_total;
-    private String s_discount;
-    private String s_surcharge;
-    private String total_amount;
+    private BigDecimal sub_total;
+    private BigDecimal discount;
+    private BigDecimal surcharge;
+    private BigDecimal total_amount;
 
-    /**
-     * Inicializa los submodelos analíticos de cálculo aritmético y el contexto
-     * del DTO.
-     */
     public Payment(PaymentSpecificationWrapperDTO dto) {
         this.dto = dto;
-        this.variable = FuncBusiness.isApply(dto.getImports().getIsVariable());
-        this.subsidy = new Subsidy();
-        this.discount = new Discount();
-        this.surcharge = new Surcharge();
-    }
-
-    /**
-     * Ejecuta la matriz de reglas financieras sobre el importe base utilizando
-     * las variables de estado de la clase.
-     *
-     * @return El importe total neto liquidado en formato numérico plano.
-     */
-    public String calculation() {
-        PaymentImportDTO imports = dto.getImports();
-        PaymentRulersDTO rulers = dto.getRulers();
-
-        // 1. Determinar el Monto Base inicial (Evaluando si es tarifa fija o variable)
-        sub_total = subtotal();
-        total_amount = sub_total;
-        s_discount = "0.00"; // Inicializado en cero para permitir acumulación segura
-        LocalDateTime now = LocalDateTime.now();
-
-        // 2. Evaluación segura del día límite de pago (Evita NumberFormatException)
-        String paydayStr = rulers.getPayday();
-        int payday = (paydayStr != null && !paydayStr.trim().isEmpty()) ? Integer.parseInt(paydayStr.trim()) : 0;
-
-        // 3. Aplicación de Recargo por vencimiento cronológico
-        if (payday > 0 && now.getDayOfMonth() >= payday) {
-            surcharge.setApply(rulers.getApplySurcharge());
-            if (surcharge.isApply()) {
-                total_amount = surcharge.getTotal(total_amount, imports.getSurcharge());
-                s_surcharge = imports.getSurcharge();
-            } else {
-                s_surcharge = "0.00";
-            }
+        if (dto != null && dto.getImports() != null) {
+            this.variable = FuncBusiness.isApply(dto.getImports().getIsVariable());
         } else {
-            s_surcharge = "0.00";
+            this.variable = false;
         }
-
-        // 4. Aplicación de Descuento comercial o por campaña
-        discount.setApply(rulers.getApplyDiscount());
-        if (FuncBusiness.isApply(rulers.getApplyRulers()) && discount.isApply()) {
-            total_amount = discount.getTotal(total_amount, imports.getDiscount());
-            s_discount = imports.getDiscount();
-        }
-
-        // 5. Aplicación de Subsidio gubernamental o preferencial
-        subsidy.setApply(rulers.getApplySubsidy());
-        if (FuncBusiness.isApply(rulers.getApplyRulers()) && subsidy.isApply()) {
-            total_amount = subsidy.getTotal(total_amount, imports.getSubsidy());
-            // Se acumula el monto del subsidio al beneficio total de s_discount
-            s_discount = FuncBusiness.surcharge(s_discount, imports.getSubsidy()).toPlainString();
-        }
-
-        return FuncBusiness.round(total_amount, rulers.getRound(), rulers.getRounUp()).toPlainString();
+        this.lbl_subsidy = new Subsidy();
+        this.lbl_discount = new Discount();
+        this.lbl_surcharge = new Surcharge();
+        this.sub_total = BigDecimal.ZERO;
+        this.discount = BigDecimal.ZERO;
+        this.surcharge = BigDecimal.ZERO;
+        this.total_amount = BigDecimal.ZERO;
     }
 
-    /**
-     * Calcula el subtotal inicial procesando si el concepto es de costo
-     * variable.
-     */
-    private String subtotal() {
+    public Payment() {
+        this(null);
+    }
+
+    public BigDecimal calculation() throws PaymentException {
+        if (Func.isNull(dto) || Func.isNull(dto.getImports()) || Func.isNull(dto.getRulers())) {
+            throw new PaymentException(1, "OBJETOS NO INICIALIZADOS");
+        }
+
         PaymentImportDTO imports = dto.getImports();
+        BigDecimal unit_amount = FuncBusiness.safeBigDecimal(imports.getAmount());
 
-        BigDecimal v = FuncBusiness.variable(
-                imports.getAmount(),
-                imports.getIsVariable(),
-                imports.getUnits()
-        );
+        // VALIDACIÓN DE IMPORTE INICIAL
+        if (unit_amount.compareTo(BigDecimal.ZERO) == 0) {
+            throw new PaymentException(1, "SUB TOTAL EN CEROS: 0.00");
+        }
+        if (unit_amount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new PaymentException(1, "SUB TOTAL NEGATIVO: " + unit_amount.toPlainString());
+        }
 
-        return v.toPlainString();
-    }
+        PaymentRulersDTO rulers = dto.getRulers();
+        //BANDERA DE REGLAS BASICAS(TRUE SI NO APLICA SUBSIDIOS NI DESCUENTOS)
+        boolean apply_rulers = FuncBusiness.isApply(rulers.getApplyRulers());
+        //BANDERA DE REDONDEO
+        boolean round = FuncBusiness.isApply(rulers.getRound());
+        //BANDERA DE REDONDEO HACIA ARRIBA
+        boolean round_up = FuncBusiness.isApply(rulers.getRounUp());
 
-    // --- Getters de Estado ---
-    public Discount getDiscount() {
-        return discount;
-    }
+        // CÁLCULO DE BASE SEGÚN UNIDADES
+        variable = FuncBusiness.isApply(imports.getIsVariable());
+        BigDecimal items = FuncBusiness.safeBigDecimal(imports.getUnits());
 
-    public Subsidy getSubsidy() {
-        return subsidy;
-    }
+        // SI ES VARIABLE EL CALCULO BASE SE MULIPLICA POR LOS ITEMS COLOCADOS
+        sub_total = FuncBusiness.variable(unit_amount, variable, items);
+        total_amount = sub_total;
 
-    public Surcharge getSurcharge() {
-        return surcharge;
+        // 1. APLICACIÓN DE SUBSIDIO
+        boolean apply_subsidy = FuncBusiness.isApply(rulers.getApplySubsidy());
+        if (apply_rulers && apply_subsidy) {
+            BigDecimal _subsidy = FuncBusiness.safeBigDecimal(imports.getSubsidy());
+            discount = discount.add(_subsidy); // Corrección: reasignación por inmutabilidad
+            lbl_subsidy.setApply(apply_subsidy);
+            total_amount = lbl_subsidy.getTotal(total_amount, _subsidy);
+        }
+
+        // 2. APLICACIÓN DE DESCUENTOS
+        boolean apply_discount = FuncBusiness.isApply(rulers.getApplyDiscount());
+        if (apply_rulers && apply_discount) {
+            BigDecimal _discount = FuncBusiness.safeBigDecimal(imports.getDiscount());
+            discount = discount.add(_discount); // Corrección: reasignación por inmutabilidad
+            lbl_discount.setApply(apply_discount);
+            total_amount = lbl_discount.getTotal(total_amount, _discount);
+        }
+        //FECHA ACTUAL
+        LocalDate now = LocalDate.now();
+        //DIA DE PAGO(0 SI ES PAGO UNICO)
+        int pay_day = 0;
+        //BANDERA PARA INDICAR SI SE APLICA EL DIA DE PAGO
+        boolean apply_pay_day = pay_day == 0;
+        //SI pay_day ES DIFERENTE DE NULL SE EVAULA
+        if (Func.isNotNull(rulers.getPayday())) {
+            pay_day = Integer.parseInt(rulers.getPayday());
+            //SI pay_day ES 0 ES PAGO UNICO(NO APLICA RECARGOS)
+            apply_pay_day = pay_day > 0 && now.getDayOfMonth() > pay_day;
+        }
+
+        // 3. APLICACIÓN DE RECARGOS
+        boolean apply_surcharge = FuncBusiness.isApply(rulers.getApplySurcharge());
+        //VALIDAMOS SI EL DIA DE PAGO Y LA REGLAS ASOCIADAS SON VALIDAS PARA RECARGOS
+        if (apply_pay_day && apply_surcharge) {
+            BigDecimal _surcharge = FuncBusiness.safeBigDecimal(imports.getSurcharge());
+            surcharge = surcharge.add(_surcharge); // Corrección: reasignación por inmutabilidad
+            lbl_surcharge.setApply(apply_surcharge);
+            total_amount = lbl_surcharge.getTotal(total_amount, _surcharge);
+        }
+
+        // REDONDEO FINAL CONSOLIDADO (Evita errores acumulativos por centavos)
+        total_amount = FuncBusiness.round(total_amount, round, round_up);
+
+        // VALIDACIÓN DE IMPORTE FINAL
+        if (total_amount.compareTo(BigDecimal.ZERO) == 0) {
+            throw new PaymentException(1, "TOTAL EN CEROS: 0.00");
+        }
+        if (total_amount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new PaymentException(1, "TOTAL NEGATIVO: " + total_amount.toPlainString());
+        }
+        return total_amount;
     }
 
     public boolean isVariable() {
         return variable;
     }
 
-    public String getSubTotal() {
+    public void setVariable(boolean variable) {
+        this.variable = variable;
+    }
+
+    public BigDecimal getSub_total() {
         return sub_total;
     }
 
-    public String getSDiscount() {
-        return s_discount;
+    public void setSub_total(BigDecimal sub_total) {
+        this.sub_total = sub_total;
     }
 
-    public String getSSurcharge() {
-        return s_surcharge;
+    public BigDecimal getDiscount() {
+        return discount;
     }
 
-    public String getTotalAmount() {
+    public void setDiscount(BigDecimal discount) {
+        this.discount = discount;
+    }
+
+    public BigDecimal getSurcharge() {
+        return surcharge;
+    }
+
+    public void setSurcharge(BigDecimal surcharge) {
+        this.surcharge = surcharge;
+    }
+
+    public BigDecimal getTotal_amount() {
         return total_amount;
+    }
+
+    public void setTotal_amount(BigDecimal total_amount) {
+        this.total_amount = total_amount;
     }
 }
