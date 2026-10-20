@@ -1,111 +1,247 @@
 package jsoftware.com.jpaymentlib.model.dto;
 
-import java.util.Map;
-import jsoftware.com.jpaymentlib.util.Func;
-import jsoftware.com.jutil.db.JDBMapObject;
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
- * DTO correspondiente a la información del detalle de los pagos del sistema
- * (PaymentDetail).
- * <br>
- * Utiliza la estructura interna dinámica de Map para transportar las cadenas de
- * texto de manera flexible entre los formularios de Swing y la capa DAO de
- * MySQL.
+ * DTO para la tabla pym_payment_detail. Transporta la información de desglose
+ * de conceptos y meses pagados.
  *
- * @author JUAN PABLO CAMPOS CASASANERO
- * @since 2026-07-18
- * @version 1.0
+ * @author Juan Pablo Campos Casasanero
  */
-public class PaymentDetailDTO extends JDBMapObject {
-
+public class PaymentDetailDTO implements Serializable, Comparable<PaymentDetailDTO> {
+    
     private static final long serialVersionUID = 1L;
-
-    public PaymentDetailDTO(Map<String, Object> map) {
-        super(map);
-    }
-
+    
+    private long id;
+    private long payment_id;
+    private int no;
+    private int payment_concept_id;
+    private int specification_id;
+    private LocalDate period_date;
+    private int fiscal_year;
+    private int quantity;
+    private BigDecimal unit_price;
+    private BigDecimal subtotal;
+    private BigDecimal discount;
+    private BigDecimal surcharge;
+    private BigDecimal total_amount;
+    private int status;
+    private LocalDateTime date_update;
+    private LocalDateTime date_register;
+    private LocalDateTime date_end;
+    
     public PaymentDetailDTO() {
-        // Inicializa con una capacidad de 24 para albergar eficientemente los 17 campos restantes
-        // (excluyendo el 'id' gestionado por el padre), evitando redimensionamientos en memoria.
-        super(24);
+        this.id = -1;
+        this.payment_id = -1;
+        this.no = 0;
+        this.payment_concept_id = -1;
+        this.specification_id = -1;
+        this.period_date = null;
+        this.fiscal_year = LocalDate.now().getYear();
+        this.quantity = 0;
+        this.unit_price = BigDecimal.ZERO;
+        this.subtotal = BigDecimal.ZERO;
+        this.discount = BigDecimal.ZERO;
+        this.surcharge = BigDecimal.ZERO;
+        this.total_amount = BigDecimal.ZERO;
+        this.status = 1;
+        this.date_update = null;
+        this.date_register = null;
+        this.date_end = null;
     }
-
-    // Se omite getId() -> Heredado directamente de JDBMapObject de forma limpia
-    public String getPaymentHeaderId() {
-        return Func.nullSafeToString(get("payment_header_id"));
+    
+    public long getId() {
+        return id;
     }
-
-    public String getSequence() {
-        return Func.nullSafeToString(get("sequence"));
+    
+    public void setId(long id) {
+        this.id = id;
     }
-
-    public String getUuid() {
-        return Func.nullSafeToString(get("uuid"));
+    
+    public long getPayment_id() {
+        return payment_id;
     }
-
-    public String getPaymentConceptId() {
-        return Func.nullSafeToString(get("payment_concept_id"));
+    
+    public void setPayment_id(long payment_id) {
+        this.payment_id = payment_id;
     }
-
-    public String getSpecificationId() {
-        return Func.nullSafeToString(get("specification_id"));
+    
+    public int getNo() {
+        return no;
     }
-
-    public String getDescription() {
-        return Func.nullSafeToString(get("description"));
+    
+    public void setNo(int no) {
+        this.no = no;
     }
-
-    public String getPeriodDate() {
-        return Func.nullSafeToString(get("period_date"));
+    
+    public int getPayment_concept_id() {
+        return payment_concept_id;
     }
-
-    public String getFiscalYear() {
-        return Func.nullSafeToString(get("fiscal_year"));
+    
+    public void setPayment_concept_id(int payment_concept_id) {
+        this.payment_concept_id = payment_concept_id;
     }
-
-    public String getQuantity() {
-        return Func.nullSafeToString(get("quantity"));
+    
+    public int getSpecification_id() {
+        return specification_id;
     }
-
-    public String getUnitPrice() {
-        return Func.nullSafeToString(get("unit_price"));
+    
+    public void setSpecification_id(int specification_id) {
+        this.specification_id = specification_id;
     }
-
-    public String getSubtotal() {
-        return Func.nullSafeToString(get("subtotal"));
+    
+    public LocalDate getPeriod_date() {
+        return period_date;
     }
-
-    public String getDiscount() {
-        return Func.nullSafeToString(get("discount"));
+    
+    public void setPeriod_date(LocalDate period_date) {
+        this.period_date = period_date;
     }
-
-    public String getSurcharge() {
-        return Func.nullSafeToString(get("surcharge"));
+    
+    public int getFiscal_year() {
+        return fiscal_year;
     }
-
-    public String getTotalAmount() {
-        return Func.nullSafeToString(get("total_amount"));
+    
+    public void setFiscal_year(int fiscal_year) {
+        this.fiscal_year = fiscal_year;
     }
-
-    public String getStatus() {
-        return Func.nullSafeToString(get("status"));
+    
+    public int getQuantity() {
+        return quantity;
     }
-
-    public String getDateUpdate() {
-        return Func.nullSafeToString(get("date_update"));
+    
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
     }
-
-    public String getDateRegister() {
-        return Func.nullSafeToString(get("date_register"));
+    
+    public BigDecimal getUnit_price() {
+        return unit_price;
     }
-
-    public String getDateEnd() {
-        return Func.nullSafeToString(get("date_end"));
+    
+    public void setUnit_price(BigDecimal unit_price) {
+        this.unit_price = unit_price;
     }
-
+    
+    public BigDecimal getSubtotal() {
+        return subtotal;
+    }
+    
+    public void setSubtotal(BigDecimal subtotal) {
+        this.subtotal = subtotal;
+    }
+    
+    public BigDecimal getDiscount() {
+        return discount;
+    }
+    
+    public void setDiscount(BigDecimal discount) {
+        this.discount = discount;
+    }
+    
+    public BigDecimal getSurcharge() {
+        return surcharge;
+    }
+    
+    public void setSurcharge(BigDecimal surcharge) {
+        this.surcharge = surcharge;
+    }
+    
+    public BigDecimal getTotal_amount() {
+        return total_amount;
+    }
+    
+    public void setTotal_amount(BigDecimal total_amount) {
+        this.total_amount = total_amount;
+    }
+    
+    public int getStatus() {
+        return status;
+    }
+    
+    public void setStatus(int status) {
+        this.status = status;
+    }
+    
+    public LocalDateTime getDate_update() {
+        return date_update;
+    }
+    
+    public void setDate_update(LocalDateTime date_update) {
+        this.date_update = date_update;
+    }
+    
+    public LocalDateTime getDate_register() {
+        return date_register;
+    }
+    
+    public void setDate_register(LocalDateTime date_register) {
+        this.date_register = date_register;
+    }
+    
+    public LocalDateTime getDate_end() {
+        return date_end;
+    }
+    
+    public void setDate_end(LocalDateTime date_end) {
+        this.date_end = date_end;
+    }
+    
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 41 * hash + (int) (this.id ^ (this.id >>> 32));
+        return hash;
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final PaymentDetailDTO other = (PaymentDetailDTO) obj;
+        return this.id == other.id;
+    }
+    
     @Override
     public String toString() {
-        // Garantiza una salida segura en tus logs de Log4j2 sin riesgo de NullPointerException
-        return (values != null) ? values.toString() : "{}";
+        StringBuilder sb = new StringBuilder();
+        sb.append("PaymentDetailDTO{");
+        sb.append("id=").append(id);
+        sb.append(", payment_id=").append(payment_id);
+        sb.append(", no=").append(no);
+        sb.append(", payment_concept_id=").append(payment_concept_id);
+        sb.append(", specification_id=").append(specification_id);
+        sb.append(", period_date=").append(period_date);
+        sb.append(", fiscal_year=").append(fiscal_year);
+        sb.append(", quantity=").append(quantity);
+        sb.append(", unit_price=").append(unit_price);
+        sb.append(", subtotal=").append(subtotal);
+        sb.append(", discount=").append(discount);
+        sb.append(", surcharge=").append(surcharge);
+        sb.append(", total_amount=").append(total_amount);
+        sb.append(", status=").append(status);
+        sb.append(", date_update=").append(date_update);
+        sb.append(", date_register=").append(date_register);
+        sb.append(", date_end=").append(date_end);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    // --- COMPARABLE ---
+    @Override
+    public int compareTo(PaymentDetailDTO o) {
+        if (o == null) {
+            return 1;
+        }
+        return Long.compare(this.id, o.getId());
     }
 }
