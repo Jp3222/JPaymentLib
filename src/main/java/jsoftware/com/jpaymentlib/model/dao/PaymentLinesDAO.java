@@ -8,6 +8,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import jsoftware.com.jpaymentlib.model.dto.PaymentLinesDTO;
 import jsoftware.com.jutil.db.JDBConnection;
 
@@ -18,46 +19,66 @@ import jsoftware.com.jutil.db.JDBConnection;
 public class PaymentLinesDAO {
 
     /**
-     * Inserta un registro de cabecera de pago en la base de datos de manera
-     * transaccional. Si la operación es exitosa, enriquece el DTO asignándole
-     * el ID autogenerado por MySQL.
+     * Inserta un registro de línea de captura de pago en la base de datos de
+     * manera transaccional. Asigna la fecha actual de emisión y la fecha de
+     * expiración calculada. Si la operación es exitosa, enriquece el DTO
+     * asignándole el ID autogenerado por MySQL.
      *
-     * Todos los registros quedan con status 8(PENDIENTE)
+     * Todos los registros recién creados quedan con status 8 (PENDIENTE).
      *
      * @param connection Enlace de conexión compartida del pool transaccional.
-     * @param dto Contenedor dinámico con la información del cobro actual.
+     * @param dto Contenedor fuertemente tipado con la información de la línea
+     * de pago.
      * @param dayExp Días de vigencia para esta línea.
-     * @return true si la inserción fue exitosa y se generó la clave primaria;
-     * false en caso contrario.
-     * @throws SQLException Si ocurre un fallo de sintaxis, conexión o
-     * restricciones en el motor.
+     * @return true si la inserción fue exitosa; false en caso contrario.
+     * @throws SQLException Si ocurre un fallo de sintaxis o conectividad.
      */
     public boolean insert(JDBConnection connection, PaymentLinesDTO dto, int dayExp) throws SQLException {
+        if (dto == null || connection == null || connection.getConnection() == null) {
+            return false;
+        }
+
         String query = """
-                       INSERT INTO pym_payment_header
+                       INSERT INTO pym_payment_lines
                        (
-                         payment_id, payment_line, amount_due, timestamp_emission, 
-                         timestamp_expiration, employee_id, status
+                           payment_id, payment_line, amount_due, timestamp_emission, 
+                           timestamp_expiration, employee_id, status
                        )
                        VALUES
                        (?, ?, ?, CURRENT_TIMESTAMP, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ? DAY), ?, 8)
                        """;
 
         try (PreparedStatement ps = connection.getConnection().prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, dto.getPaymentId());
-            ps.setString(2, dto.getPaymentLine());
-            ps.setString(3, dto.getAmountDue());
+
+            // 1. payment_id (long)
+            ps.setLong(1, dto.getPayment_id());
+
+            // 2. payment_line (String)
+            ps.setString(2, dto.getPayment_line());
+
+            // 3. amount_due (BigDecimal - Conserva precisión financiera)
+            ps.setBigDecimal(3, dto.getAmount_due());
+
+            // 4. dayExp (int - Parámetro de días de vigencia)
             ps.setInt(4, dayExp);
-            ps.setString(5, dto.getEmployeeId());
+
+            // 5. employee_id (int - Manejo seguro si no está asignado)
+            if (dto.getEmployee_id() <= 0) {
+                ps.setNull(5, Types.INTEGER);
+            } else {
+                ps.setInt(5, dto.getEmployee_id());
+            }
+
             int affectedRows = ps.executeUpdate();
             if (affectedRows == 0) {
                 return false;
             }
+
             // Recuperación e inyección de la llave generada (AI)
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
                     long generatedId = rs.getLong(1);
-                    dto.put("id", String.valueOf(generatedId));
+                    dto.setId(generatedId);
                     return true;
                 }
             }
@@ -67,38 +88,47 @@ public class PaymentLinesDAO {
 
     /**
      * Actualiza el empleado asignado, el estado y la fecha de modificación de
-     * un registro de cabecera de pago a través de su ID primario.
+     * un registro de línea de pago a través de su ID primario.
      *
      * @param connection Enlace de conexión compartida del pool transaccional.
-     * @param dto Contenedor dinámico que incluye el "id", "employee_id" y
-     * "status".
+     * @param dto Contenedor con los datos a actualizar ("id", "employee_id",
+     * "status").
      * @return true si el registro fue actualizado exitosamente; false en caso
      * contrario.
-     * @throws SQLException Si ocurre un fallo de sintaxis, conexión o
-     * restricciones en el motor.
+     * @throws SQLException Si ocurre un fallo de sintaxis o conectividad.
      */
     public boolean update(JDBConnection connection, PaymentLinesDTO dto) throws SQLException {
         if (dto == null || connection == null || connection.getConnection() == null) {
             return false;
         }
-        // Validación de la clave primaria para ejecutar la cláusula WHERE
-        String id = dto.getId();
-        if (id == null || id.trim().isEmpty()) {
+
+        if (dto.getId() <= 0) {
             return false;
         }
 
         String query = """
-                       UPDATE pym_payment_header
+                       UPDATE pym_payment_lines
                        SET employee_id = ?,
                            status = ?,
                            date_update = CURRENT_TIMESTAMP
                        WHERE id = ?
                        """;
+
         try (PreparedStatement ps = connection.getConnection().prepareStatement(query)) {
-            ps.setString(1, dto.getEmployeeId());
-            ps.setString(2, dto.getStatus());
-            // Cast implícito de MySQL al evaluar la columna ID (Integer/Long)
-            ps.setString(3, id);
+
+            // 1. employee_id (int)
+            if (dto.getEmployee_id() <= 0) {
+                ps.setNull(1, Types.INTEGER);
+            } else {
+                ps.setInt(1, dto.getEmployee_id());
+            }
+
+            // 2. status (int)
+            ps.setInt(2, dto.getStatus());
+
+            // 3. id (long - Clave primaria)
+            ps.setLong(3, dto.getId());
+
             int affectedRows = ps.executeUpdate();
             return affectedRows > 0;
         }

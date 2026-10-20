@@ -8,6 +8,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import jsoftware.com.jpaymentlib.model.dto.PaymentHeaderDTO;
 import jsoftware.com.jutil.db.JDBConnection;
 import jsoftware.com.jutil.model.AbstractDAO;
@@ -25,14 +26,15 @@ public class PaymentHeaderDAO extends AbstractDAO {
     /**
      * Inserta un registro de cabecera de pago en la base de datos de manera
      * transaccional. Si la operación es exitosa, enriquece el DTO asignándole
-     * el ID autogenerado por MySQL.
+     * el ID autogenerado por MySQL mediante su setter nativo.
      *
      * @param connection Enlace de conexión compartida del pool transaccional.
-     * @param dto Contenedor dinámico con la información del cobro actual.
+     * @param dto Contenedor fuertemente tipado con la información del cobro
+     * actual.
      * @return true si la inserción fue exitosa y se generó la clave primaria;
      * false en caso contrario.
      * @throws SQLException Si ocurre un fallo de sintaxis, conexión o
-     * restricciones en el motor.
+     * restricciones.
      */
     public boolean insert(JDBConnection connection, PaymentHeaderDTO dto) throws SQLException {
         if (dto == null) {
@@ -42,109 +44,85 @@ public class PaymentHeaderDAO extends AbstractDAO {
         String query = """
                        INSERT INTO pym_payment_header
                        (
-                        process_id, sequence, uuid, user_id, wki_user_id, office_id, 
-                        cash_box_turn_id, authorized_by, payment_method_id, payment_type_id, 
-                        subtotal, discount, total_surcharge, total_amount, amount_received, 
-                        change_returned, is_surcharge_paid, transaction_reference, 
-                        cancellation_reason, print_count, status, employee_id
+                           payment_id, uuid, user_id, fiscal_year, cash_box_turn_id, 
+                           authorized_by, apply_discount, apply_surcharge, subtotal, 
+                           discount, surcharge, total_amount, amount_received, 
+                           change_returned, transaction_reference, status
                        )
                        VALUES
-                       (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                       (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                        """;
 
-        try (PreparedStatement ps = connection.getConnection().prepareStatement(query, Statement.RETURN_GENERATED_KEYS);) {
-            // Se prepara la sentencia solicitando el retorno de las llaves generadas automáticamente (AI)
+        try (PreparedStatement ps = connection.getConnection().prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
 
-            // ESTRATEGIA: Mapeo manual con el casting final y seguro de String a los tipos de MySQL.
-            // 1. process_id (int)
-            ps.setInt(1, Integer.parseInt(dto.getProcessId()));
+            // 1. payment_id (long)
+            ps.setLong(1, dto.getPayment_id());
 
-            // 2. sequence (int)
-            ps.setInt(2, Integer.parseInt(dto.getSequence()));
+            // 2. uuid (String)
+            ps.setString(2, dto.getUuid());
 
-            // 3. uuid (String)
-            ps.setString(3, dto.getUuid());
+            // 3. user_id (int)
+            ps.setInt(3, dto.getUser_id());
 
-            // 4. user_id (int)
-            ps.setInt(4, Integer.parseInt(dto.getUserId()));
+            // 4. fiscal_year (long)
+            ps.setLong(4, dto.getFiscal_year());
 
-            // 5. wki_user_id (int - Toma de agua vinculada al usuario)
-            ps.setInt(5, Integer.parseInt(dto.getWkiUserId()));
+            // 5. cash_box_turn_id (long)
+            ps.setLong(5, dto.getCash_box_turn_id());
 
-            // 6. office_id (int)
-            ps.setInt(6, Integer.parseInt(dto.getOfficeId()));
+            // 6. authorized_by (int - Soporta asignación segura de nulos / inicializado en -1)
+            if (dto.getAuthorized_by() <= 0) {
+                ps.setNull(6, Types.INTEGER);
+            } else {
+                ps.setInt(6, dto.getAuthorized_by());
+            }
 
-            // 7. cash_box_turn_id (int)
-            ps.setInt(7, Integer.parseInt(dto.getCashBoxTurnId()));
+            // 7. apply_discount (boolean -> tinyint/boolean en BD)
+            ps.setBoolean(7, dto.isApply_discount());
 
-            // 8. authorized_by (int / String según tu lógica de control interno)
-            ps.setString(8, dto.getAuthorizedBy());
+            // 8. apply_surcharge (boolean -> tinyint/boolean en BD)
+            ps.setBoolean(8, dto.isApply_surcharge());
 
-            // 9. payment_method_id (int)
-            ps.setInt(9, Integer.parseInt(dto.getPaymentMethodId()));
+            // 9. subtotal (BigDecimal - Mantiene precisión exacta)
+            ps.setBigDecimal(9, dto.getSubtotal());
 
-            // 10. payment_type_id (int)
-            ps.setInt(10, Integer.parseInt(dto.getPaymentTypeId()));
+            // 10. discount (BigDecimal)
+            ps.setBigDecimal(10, dto.getDiscount());
 
-            // 11. subtotal (double / decimal)
-            ps.setDouble(11, Double.parseDouble(dto.getSubtotal()));
+            // 11. surcharge (BigDecimal)
+            ps.setBigDecimal(11, dto.getSurcharge());
 
-            // 12. discount (double / decimal)
-            ps.setDouble(12, Double.parseDouble(dto.getDiscount()));
+            // 12. total_amount (BigDecimal)
+            ps.setBigDecimal(12, dto.getTotal_amount());
 
-            // 13. total_surcharge (double / decimal)
-            ps.setDouble(13, Double.parseDouble(dto.getTotalSurcharge()));
+            // 13. amount_received (BigDecimal)
+            ps.setBigDecimal(13, dto.getAmount_received());
 
-            // 14. total_amount (double / decimal)
-            ps.setDouble(14, Double.parseDouble(dto.getTotalAmount()));
+            // 14. change_returned (BigDecimal)
+            ps.setBigDecimal(14, dto.getChange_returned());
 
-            // 15. amount_received (double / decimal)
-            ps.setDouble(15, Double.parseDouble(dto.getAmountReceived()));
+            // 15. transaction_reference (String)
+            ps.setString(15, dto.getTransaction_reference());
 
-            // 16. change_returned (double / decimal)
-            ps.setDouble(16, Double.parseDouble(dto.getChangeReturned()));
+            // 16. status (int)
+            ps.setInt(16, dto.getStatus());
 
-            // 17. is_surcharge_paid (String / tinyint)
-            ps.setString(17, dto.getIsSurchargePaid());
-
-            // 18. transaction_reference (String)
-            ps.setString(18, dto.getTransactionReference());
-
-            // 19. cancellation_reason (String)
-            ps.setString(19, dto.getCancellationReason());
-
-            // 20. print_count (int)
-            ps.setInt(20, Integer.parseInt(dto.getPrintCount()));
-
-            // 21. status (String / char)
-            ps.setString(21, dto.getStatus());
-
-            // 22. employee_id (int)
-            ps.setInt(22, Integer.parseInt(dto.getEmployeeId()));
-
-            // Ejecución de la sentencia
+            // Ejecución del comando en MySQL
             int affectedRows = ps.executeUpdate();
 
-            // Si no hubo filas afectadas, el insert falló drásticamente
             if (affectedRows == 0) {
                 return false;
             }
 
-            // 2. RECUPERACIÓN E INYECCIÓN DE LA LLAVE GENERADA
+            // Recuperación e inyección directa del ID autogenerado en el DTO
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
-                    // Obtenemos el ID asignado por MySQL
                     long generatedId = rs.getLong(1);
-
-                    // Enriquecemos el DTO inyectando el valor en formato String en el mapa
-                    // Nota: Asumiendo que JDBMapObject expone un método put() o almacena en la clave "id"
-                    dto.put("id", String.valueOf(generatedId));
-
+                    dto.setId(generatedId);
                     return true;
                 }
             }
             return false;
         }
     }
-
 }
