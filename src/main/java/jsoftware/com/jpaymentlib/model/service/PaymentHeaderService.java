@@ -1,9 +1,10 @@
 package jsoftware.com.jpaymentlib.model.service;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
+import jsoftware.com.jblue.model.abst.AbstractService;
 import jsoftware.com.jpaymentlib.model.dao.PaymentHeaderDAO;
 import jsoftware.com.jpaymentlib.model.dto.PaymentDetailDTO;
 import jsoftware.com.jpaymentlib.model.dto.PaymentHeaderDTO;
@@ -18,15 +19,16 @@ import jsoftware.com.jutil.db.JDBConnection;
  * @since 2026-07-18
  * @version 1.0
  */
-public class PaymentHeaderService {
+public class PaymentHeaderService extends AbstractService {
 
     private final PaymentDetailService service;
     private final PaymentHeaderDAO payment_header_dao;
 
-    public PaymentHeaderService(boolean flag_dev, String name_module) {
+    public PaymentHeaderService(boolean dev_flag, String process_name) {
+        super(dev_flag, process_name);
         // SOLUCIÓN CRÍTICA 2: Inicializar el servicio dependiente para evitar NullPointerException
-        this.service = new PaymentDetailService(flag_dev, name_module);
-        this.payment_header_dao = new PaymentHeaderDAO(flag_dev, name_module);
+        this.service = new PaymentDetailService(dev_flag, process_name);
+        this.payment_header_dao = new PaymentHeaderDAO(dev_flag, process_name);
     }
 
     /**
@@ -35,48 +37,58 @@ public class PaymentHeaderService {
      *
      * @param connection Conexión a la base de datos para operaciones futuras
      * @param detail_list Lista de detalles de pago a procesar
-     * @return Optional con el PaymentWrapper empaquetado
-     * @throws PaymentException Si los importes acumulados son cero
+     * @return PaymentHeaderDTO con los totales calculados
+     * @throws PaymentException Si los importes acumulados son cero, negativos o
+     * inconsistentes
      */
-    public PaymentHeaderDTO getPaymentHeader(JDBConnection connection, List<PaymentDetailDTO> detail_list) throws PaymentException {
+    public Optional<PaymentHeaderDTO> getPaymentHeader(JDBConnection connection, List<PaymentDetailDTO> detail_list) throws PaymentException {
         if (detail_list == null || detail_list.isEmpty()) {
             throw new PaymentException(2, "DESGLOSE DE PAGO NO GENERADO");
         }
+
         BigDecimal sub_total = BigDecimal.ZERO;
         BigDecimal discount = BigDecimal.ZERO;
-        BigDecimal total_surcharge = BigDecimal.ZERO;
+        BigDecimal surcharge = BigDecimal.ZERO;
         BigDecimal total_amount = BigDecimal.ZERO;
 
-        // 1. ACUMULACIÓN ARITMÉTICA SEGURA DE LOS DETALLES
+        // 1. Acumulaciones con parsing seguro
         for (PaymentDetailDTO i : detail_list) {
-            sub_total = sub_total.add(parseBigDecimal(i.getSubtotal()));
-            discount = discount.add(parseBigDecimal(i.getDiscount()));
-            total_surcharge = total_surcharge.add(parseBigDecimal(i.getSurcharge()));
-            total_amount = total_amount.add(parseBigDecimal(i.getTotalAmount()));
+            sub_total = sub_total.add(i.getSubtotal());
+            discount = discount.add(i.getDiscount());
+            surcharge = surcharge.add(i.getSurcharge());
+            total_amount = total_amount.add(i.getTotal_amount());
         }
 
-        // 2. VALIDACIÓN DE IMPORTES (compareTo ignora diferencia entre 0 y 0.00)
+        // 2. Validaciones de límites
         if (sub_total.compareTo(BigDecimal.ZERO) == 0) {
             throw new PaymentException(1, "SUBTOTAL EN 0.00");
         }
         if (total_amount.compareTo(BigDecimal.ZERO) == 0) {
             throw new PaymentException(2, "TOTAL EN 0.00");
         }
-        // 2. VALIDACIÓN DE IMPORTES (compareTo ignora diferencia entre 0 y 0.00)
         if (sub_total.compareTo(BigDecimal.ZERO) < 0) {
             throw new PaymentException(3, "SUBTOTAL NEGATIVO: " + sub_total.toPlainString());
         }
         if (total_amount.compareTo(BigDecimal.ZERO) < 0) {
-            throw new PaymentException(4, "TOTAL NEGATIVO" + total_amount.toPlainString());
+            throw new PaymentException(4, "TOTAL NEGATIVO: " + total_amount.toPlainString());
         }
 
-        // 3. PREPARACIÓN DEL ENCABEZADO CON ESCALA MONETARIA (2 DECIMALES)
+        // 3. Validación de integridad matemática (Subtotal - Descuento + Recargo == Total)
+        BigDecimal expectedTotal = sub_total.subtract(discount).add(surcharge);
+        if (total_amount.compareTo(expectedTotal) != 0) {
+            throw new PaymentException(5, String.format(
+                    "INCONSISTENCIA EN CABECERA DE PAGO: Calculado (%s) != Esperado (%s)",
+                    total_amount.toPlainString(), expectedTotal.toPlainString()
+            ));
+        }
+
+        // 4. Construcción del DTO de salida
         PaymentHeaderDTO header = new PaymentHeaderDTO();
-        header.put("sub_total", sub_total.setScale(2, RoundingMode.HALF_UP).toPlainString());
-        header.put("discount", discount.setScale(2, RoundingMode.HALF_UP).toPlainString());
-        header.put("surcharge", total_surcharge.setScale(2, RoundingMode.HALF_UP).toPlainString());
-        header.put("total_amount", total_amount.setScale(2, RoundingMode.HALF_UP).toPlainString());
-        return header;
+        header.setSubtotal(sub_total);
+        header.setDiscount(discount);
+        header.setSurcharge(surcharge);
+        header.setTotal_amount(total_amount);
+        return Optional.of(header);
     }
 
     /**

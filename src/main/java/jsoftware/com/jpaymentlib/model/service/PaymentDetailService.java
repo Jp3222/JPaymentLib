@@ -1,22 +1,18 @@
 package jsoftware.com.jpaymentlib.model.service;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import jsoftware.com.jpaymentlib.model.dao.PaymentConceptDAO;
+import jsoftware.com.jblue.model.abst.AbstractService;
 import jsoftware.com.jpaymentlib.model.dao.PaymentDetailDAO;
-import jsoftware.com.jpaymentlib.model.dao.PaymentImportDAO;
-import jsoftware.com.jpaymentlib.model.dao.PaymentRulersDAO;
-import jsoftware.com.jpaymentlib.model.dao.PaymentSpecificationDAO;
 import jsoftware.com.jpaymentlib.model.dto.PaymentConceptDTO;
 import jsoftware.com.jpaymentlib.model.dto.PaymentDetailDTO;
 import jsoftware.com.jpaymentlib.model.dto.PaymentImportDTO;
-import jsoftware.com.jpaymentlib.model.dto.PaymentRulersDTO;
 import jsoftware.com.jpaymentlib.model.dto.PaymentSpecificationDTO;
 import jsoftware.com.jpaymentlib.model.dto.wrp.PaymentSpecificationWrapperDTO;
-import jsoftware.com.jpaymentlib.model.dto.wrp.PaymentWrapper;
 import jsoftware.com.jpaymentlib.model.exp.PaymentException;
 import jsoftware.com.jpaymentlib.model.l4b.Payment;
 import jsoftware.com.jutil.db.JDBConnection;
@@ -28,22 +24,16 @@ import jsoftware.com.jutil.db.JDBConnection;
  * @since 2026-07-18
  * @version 1.1
  */
-public class PaymentDetailService {
-
-    private final PaymentSpecificationDAO specification_dao;
-    private final PaymentConceptDAO concept_dao;
-    private final PaymentRulersDAO rulers_dao;
-    private final PaymentImportDAO imports_dao;
+public class PaymentDetailService extends AbstractService {
 
     //
     private final PaymentDetailDAO pym_detail_dao;
+    private PaymentSpecificationService specification_service;
 
-    public PaymentDetailService(boolean flag_dev, String name_module) {
-        specification_dao = new PaymentSpecificationDAO();
-        concept_dao = new PaymentConceptDAO(flag_dev, name_module);
-        rulers_dao = new PaymentRulersDAO();
-        imports_dao = new PaymentImportDAO();
-        pym_detail_dao = new PaymentDetailDAO(flag_dev, name_module);
+    public PaymentDetailService(boolean dev_flag, String process_name) {
+        super(dev_flag, process_name);
+        pym_detail_dao = new PaymentDetailDAO(dev_flag, process_name);
+        specification_service = new PaymentSpecificationService(dev_flag, process_name);
     }
 
     public boolean save(JDBConnection connection, List<PaymentDetailDTO> list) throws SQLException, PaymentException, SQLException, SQLException, SQLException, SQLException, SQLException, SQLException {
@@ -68,12 +58,12 @@ public class PaymentDetailService {
      * @throws PaymentException
      * @throws SQLException
      */
-    public List<PaymentDetailDTO> getDetailList(JDBConnection connection, PaymentWrapper wrp) throws PaymentException, SQLException {
-        if (wrp.getConcept_list().isEmpty()) {
+    public List<PaymentDetailDTO> getDetailList(JDBConnection connection, List<Integer> concept_list) throws PaymentException, SQLException {
+        if (concept_list.isEmpty()) {
             throw new PaymentException(1, "LISTA DE ESPECIFICACIONES VACIA");
         }
         //OBTENCION DE ESPECIFICACIONES
-        List<PaymentSpecificationWrapperDTO> list = getPaymentSpecification(connection, wrp.getConcept_list());
+        List<PaymentSpecificationWrapperDTO> list = specification_service.getPaymentSpecification(connection, concept_list);
         if (list.isEmpty()) {
             throw new PaymentException(2, "LISTA DE ESPECIFICACIONES NO GENERADA");
         }
@@ -81,22 +71,23 @@ public class PaymentDetailService {
         //LISTA DE DETALLES, EN CASO DE SALIR MAL, SE RETORNA VACIA
         List<PaymentDetailDTO> details = new ArrayList<>();
 
+        int j = 1;
         // 2. LÓGICA DE COBRO Y CONSTRUCCIÓN DE DETALLES
         for (PaymentSpecificationWrapperDTO i : list) {
             PaymentSpecificationDTO specification = i.getSpecification();
             LocalDate now = LocalDate.now();
-            
-            if (specification.getDateStartApplication() != null) {
+
+            if (specification.getDate_start_application() != null) {
                 // Validación de vigencia: Fecha de inicio
-                LocalDate date_start = LocalDate.parse(specification.getDateStartApplication());
+                LocalDate date_start = specification.getDate_start_application();
                 if (date_start.isAfter(now)) {
                     continue;
                 }
             }
-            
-            if (specification.getDateEndApplication() != null) {
+
+            if (specification.getDate_end_application() != null) {
                 // Validación de vigencia: Fecha de fin
-                LocalDate date_end = LocalDate.parse(specification.getDateEndApplication());
+                LocalDate date_end = specification.getDate_end_application();
                 if (date_end != null && date_end.isBefore(now)) {
                     continue;
                 }
@@ -104,85 +95,107 @@ public class PaymentDetailService {
 
             // Validación de estado del concepto administrativo
             PaymentConceptDTO concept = i.getConcepts();
-            String final_status = concept.getStatus();
-            if (!final_status.equals("1")) {
+            int final_status = concept.getStatus();
+            if (final_status != 1) {
                 throw new PaymentException(0, "EL TRAMITE CONTIENE CONCEPTOS ANTIGUOS, CONSULTE EL MODULO DE CONCEPTOS");
             }
 
             // SE INICIA EL ARMADO DEL DTO DE DETALLE (Mapeo flexible basado en Strings)
             PaymentDetailDTO detail = new PaymentDetailDTO();
-            detail.put("specification_id", specification.getId()); // SOLUCIÓN 4: Extraer el ID plano
-            detail.put("payment_concept_id", concept.getId());
-            detail.put("fiscal_year", String.valueOf(now.getYear()));
+            detail.setSpecification_id(specification.getId()); // SOLUCIÓN 4: Extraer el ID plano
+            detail.setPayment_concept_id(concept.getId());
+            detail.setFiscal_year(now.getYear());
 
             PaymentImportDTO imports = i.getImports();
 
             // Instancia del motor analítico
             Payment pym = new Payment(i);
-            String total = pym.calculation().toPlainString();
+            BigDecimal total = pym.calculation();
 
             // LÓGICA DE ASIGNACIÓN DE IMPORTES PROCESADOS POR EL MOTOR
-            detail.put("quantity", pym.isVariable() ? imports.getUnits() : "1");
-            detail.put("unit_price", imports.getAmount());
-            detail.put("subtotal", pym.getSub_total().toPlainString());
-            detail.put("surcharge", pym.getSurcharge().toPlainString());
-            detail.put("discount", pym.getDiscount().toPlainString());
-            detail.put("total_amount", total);
-            detail.put("fiscal_year", String.valueOf(now.getYear()));
+            detail.setNo(j);
+            detail.setQuantity(pym.isVariable() ? imports.getUnits() : 1);
+            detail.setUnit_price(imports.getAmount());
+            detail.setSubtotal(pym.getSub_total());
+            detail.setSurcharge(pym.getSurcharge());
+            detail.setDiscount(pym.getDiscount());
+            detail.setTotal_amount(total);
+            detail.setFiscal_year(now.getYear());
             // SOLUCIÓN CRÍTICA 3: Agregar el detalle construido a la lista final de retorno
             details.add(detail);
-            
+            j++;
         }
-
         return details;
     }
 
-    /**
-     * Es
-     *
-     * @param connection
-     * @param specification_id
-     * @param months_list
-     * @return
-     */
-    public List<PaymentDetailDTO> getDetailList(JDBConnection connection, String specification_id, List<String> months_list) {
-        return null;
-    }
-
-    public List<PaymentSpecificationWrapperDTO> getPaymentSpecification(JDBConnection connection, List<Integer> specification_list) throws SQLException, PaymentException {
-        List<PaymentSpecificationWrapperDTO> list = new ArrayList<>();
-
-        // 1. SE OBTIENEN LAS ESPECIFICACIONES DE LOS CONCEPTOS SOLICITADOS
-        List<PaymentSpecificationDTO> specifications = specification_dao.getSpecificationList(connection, specification_list);
-
-        for (PaymentSpecificationDTO specification : specifications) {
-            // SE BUSCA EL CONCEPTO INDIVIDUAL
-            Optional<PaymentConceptDTO> concept = concept_dao.getConceptList(connection, specification.getConceptId());
-            if (concept.isEmpty()) {
-                throw new PaymentException(1, "CONCEPTO DE PAGO NO EXISTENTE");
-            }
-
-            // SE BUSCA SU IMPORTE
-            Optional<PaymentImportDTO> imports = imports_dao.getImportList(connection, specification.getImportId());
-            if (concept.isEmpty()) {
-                throw new PaymentException(1, "IMPORTES DE PAGO NO EXISTENTES");
-            }
-
-            // SE BUSCA SUS REGLAS
-            Optional<PaymentRulersDTO> ruler = rulers_dao.getRulerList(connection, specification.getRulerId());
-            if (concept.isEmpty()) {
-                throw new PaymentException(1, "REGLAS DE PAGO NO EXISTENTES");
-            }
-
-            // SE CREA Y LLENA EL ENVOLTORIO
-            PaymentSpecificationWrapperDTO wrp = new PaymentSpecificationWrapperDTO();
-            wrp.setSpecification(specification);
-            wrp.setConcepts(concept.get());
-            wrp.setImports(imports.get());
-            wrp.setRulers(ruler.get());
-            // SOLUCIÓN CRÍTICA 1: Se añade el wrapper a la lista para que el siguiente bucle tenga datos
-            list.add(wrp);
+    public List<PaymentDetailDTO> getDetailList(JDBConnection connection, List<Integer> concept_list, int specification_id) throws PaymentException, SQLException {
+        if (concept_list.isEmpty()) {
+            throw new PaymentException(1, "LISTA DE ESPECIFICACIONES VACIA");
         }
-        return list;
+        //OBTENCION DE ESPECIFICACIONES
+        Optional<PaymentSpecificationWrapperDTO> option = specification_service.getPaymentSpecification(connection, specification_id);
+        if (option.isEmpty()) {
+            throw new PaymentException(2, "LISTA DE ESPECIFICACIONES NO GENERADA");
+        }
+
+        //LISTA DE DETALLES, EN CASO DE SALIR MAL, SE RETORNA VACIA
+        List<PaymentDetailDTO> details = new ArrayList<>();
+
+        PaymentSpecificationWrapperDTO i = option.get();
+        int j = 1;
+        // 2. LÓGICA DE COBRO Y CONSTRUCCIÓN DE DETALLES
+        for (Integer k : concept_list) {
+            PaymentSpecificationDTO specification = i.getSpecification();
+            LocalDate now = LocalDate.now();
+
+            if (specification.getDate_start_application() != null) {
+                // Validación de vigencia: Fecha de inicio
+                LocalDate date_start = specification.getDate_start_application();
+                if (date_start.isAfter(now)) {
+                    continue;
+                }
+            }
+
+            if (specification.getDate_end_application() != null) {
+                // Validación de vigencia: Fecha de fin
+                LocalDate date_end = specification.getDate_end_application();
+                if (date_end != null && date_end.isBefore(now)) {
+                    continue;
+                }
+            }
+
+            // Validación de estado del concepto administrativo
+            PaymentConceptDTO concept = i.getConcepts();
+            int final_status = concept.getStatus();
+            if (final_status != 1) {
+                throw new PaymentException(0, "EL TRAMITE CONTIENE CONCEPTOS ANTIGUOS, CONSULTE EL MODULO DE CONCEPTOS");
+            }
+
+            // SE INICIA EL ARMADO DEL DTO DE DETALLE (Mapeo flexible basado en Strings)
+            PaymentDetailDTO detail = new PaymentDetailDTO();
+            detail.setSpecification_id(specification.getId()); // SOLUCIÓN 4: Extraer el ID plano
+            detail.setPayment_concept_id(concept.getId());
+            detail.setFiscal_year(now.getYear());
+
+            PaymentImportDTO imports = i.getImports();
+
+            // Instancia del motor analítico
+            Payment pym = new Payment(i);
+            BigDecimal total = pym.calculation();
+
+            // LÓGICA DE ASIGNACIÓN DE IMPORTES PROCESADOS POR EL MOTOR
+            detail.setNo(j);
+            detail.setQuantity(pym.isVariable() ? imports.getUnits() : 1);
+            detail.setUnit_price(imports.getAmount());
+            detail.setSubtotal(pym.getSub_total());
+            detail.setSurcharge(pym.getSurcharge());
+            detail.setDiscount(pym.getDiscount());
+            detail.setTotal_amount(total);
+            detail.setFiscal_year(now.getYear());
+            // SOLUCIÓN CRÍTICA 3: Agregar el detalle construido a la lista final de retorno
+            details.add(detail);
+            j++;
+        }
+        return details;
     }
 }

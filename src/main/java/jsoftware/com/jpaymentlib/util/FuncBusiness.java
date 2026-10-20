@@ -49,6 +49,21 @@ public class FuncBusiness {
         return BigDecimal.ZERO;
     }
 
+    /**
+     * Realiza una conversión segura de int a BigDecimal. Si la cadena es
+     * inválida, nula o vacía, retorna un valor por defecto (ZERO).
+     *
+     * @param value Cadena con el número a convertir.
+     * @return Instancia de BigDecimal con el valor parseado o ZERO si falla.
+     */
+    public static BigDecimal safeBigDecimal(int value) {
+        try {
+            return new BigDecimal(value);
+        } catch (NumberFormatException e) {
+            return BigDecimal.ZERO;
+        }
+    }
+
     public static BigDecimal surcharge(BigDecimal base, BigDecimal surcharge) {
         return base.add(surcharge);
     }

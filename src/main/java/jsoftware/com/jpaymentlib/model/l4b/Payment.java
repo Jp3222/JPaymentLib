@@ -29,11 +29,12 @@ public class Payment {
     private BigDecimal discount;
     private BigDecimal surcharge;
     private BigDecimal total_amount;
+    private StringBuilder observations;
 
     public Payment(PaymentSpecificationWrapperDTO dto) {
         this.dto = dto;
         if (dto != null && dto.getImports() != null) {
-            this.variable = FuncBusiness.isApply(dto.getImports().getIsVariable());
+            this.variable = dto.getImports().isvariable();
         } else {
             this.variable = false;
         }
@@ -54,9 +55,8 @@ public class Payment {
         if (Func.isNull(dto) || Func.isNull(dto.getImports()) || Func.isNull(dto.getRulers())) {
             throw new PaymentException(1, "OBJETOS NO INICIALIZADOS");
         }
-
         PaymentImportDTO imports = dto.getImports();
-        BigDecimal unit_amount = FuncBusiness.safeBigDecimal(imports.getAmount());
+        BigDecimal unit_amount = imports.getAmount();
 
         // VALIDACIÓN DE IMPORTE INICIAL
         if (unit_amount.compareTo(BigDecimal.ZERO) == 0) {
@@ -67,38 +67,29 @@ public class Payment {
         }
 
         PaymentRulersDTO rulers = dto.getRulers();
-        //BANDERA DE REGLAS BASICAS(TRUE SI NO APLICA SUBSIDIOS NI DESCUENTOS)
-        boolean apply_rulers = FuncBusiness.isApply(rulers.getApplyRulers());
-        //BANDERA DE REDONDEO
-        boolean round = FuncBusiness.isApply(rulers.getRound());
-        //BANDERA DE REDONDEO HACIA ARRIBA
-        boolean round_up = FuncBusiness.isApply(rulers.getRounUp());
-
+        observations = new StringBuilder();
         // CÁLCULO DE BASE SEGÚN UNIDADES
-        variable = FuncBusiness.isApply(imports.getIsVariable());
+        variable = imports.isvariable();
         BigDecimal items = FuncBusiness.safeBigDecimal(imports.getUnits());
 
         // SI ES VARIABLE EL CALCULO BASE SE MULIPLICA POR LOS ITEMS COLOCADOS
         sub_total = FuncBusiness.variable(unit_amount, variable, items);
         total_amount = sub_total;
-
         // 1. APLICACIÓN DE SUBSIDIO
-        boolean apply_subsidy = FuncBusiness.isApply(rulers.getApplySubsidy());
-        if (apply_rulers && apply_subsidy) {
-            BigDecimal _subsidy = FuncBusiness.safeBigDecimal(imports.getSubsidy());
-            discount = discount.add(_subsidy); // Corrección: reasignación por inmutabilidad
-            lbl_subsidy.setApply(apply_subsidy);
-            total_amount = lbl_subsidy.getTotal(total_amount, _subsidy);
+        if (rulers.isApply_rulers() && rulers.isApply_subsidy()) {
+            discount = discount.add(imports.getSubsidy()); // Corrección: reasignación por inmutabilidad
+            lbl_subsidy.setApply(rulers.isApply_subsidy());
+            total_amount = lbl_subsidy.getTotal(total_amount, imports.getSubsidy());
+            observations.append("APLICACION DE SUBSIDIO,");
         }
 
         // 2. APLICACIÓN DE DESCUENTOS
-        boolean apply_discount = FuncBusiness.isApply(rulers.getApplyDiscount());
-        if (apply_rulers && apply_discount) {
-            BigDecimal _discount = FuncBusiness.safeBigDecimal(imports.getDiscount());
-            discount = discount.add(_discount); // Corrección: reasignación por inmutabilidad
-            lbl_discount.setApply(apply_discount);
-            total_amount = lbl_discount.getTotal(total_amount, _discount);
+        if (rulers.isApply_rulers() && rulers.isApply_discount()) {
+            discount = discount.add(imports.getDiscount()); // Corrección: reasignación por inmutabilidad
+            lbl_discount.setApply(rulers.isApply_discount());
+            total_amount = lbl_discount.getTotal(total_amount, imports.getDiscount());
         }
+
         //FECHA ACTUAL
         LocalDate now = LocalDate.now();
         //DIA DE PAGO(0 SI ES PAGO UNICO)
@@ -107,23 +98,21 @@ public class Payment {
         boolean apply_pay_day = pay_day == 0;
         //SI pay_day ES DIFERENTE DE NULL SE EVAULA
         if (Func.isNotNull(rulers.getPayday())) {
-            pay_day = Integer.parseInt(rulers.getPayday());
+            pay_day = rulers.getPayday();
             //SI pay_day ES 0 ES PAGO UNICO(NO APLICA RECARGOS)
             apply_pay_day = pay_day > 0 && now.getDayOfMonth() > pay_day;
         }
 
         // 3. APLICACIÓN DE RECARGOS
-        boolean apply_surcharge = FuncBusiness.isApply(rulers.getApplySurcharge());
         //VALIDAMOS SI EL DIA DE PAGO Y LA REGLAS ASOCIADAS SON VALIDAS PARA RECARGOS
-        if (apply_pay_day && apply_surcharge) {
-            BigDecimal _surcharge = FuncBusiness.safeBigDecimal(imports.getSurcharge());
-            surcharge = surcharge.add(_surcharge); // Corrección: reasignación por inmutabilidad
-            lbl_surcharge.setApply(apply_surcharge);
-            total_amount = lbl_surcharge.getTotal(total_amount, _surcharge);
+        if (apply_pay_day && rulers.isApply_surcharge()) {
+            surcharge = surcharge.add(imports.getSurcharge()); // Corrección: reasignación por inmutabilidad
+            lbl_surcharge.setApply(rulers.isApply_surcharge());
+            total_amount = lbl_surcharge.getTotal(total_amount, imports.getSurcharge());
         }
 
         // REDONDEO FINAL CONSOLIDADO (Evita errores acumulativos por centavos)
-        total_amount = FuncBusiness.round(total_amount, round, round_up);
+        total_amount = FuncBusiness.round(total_amount, rulers.isRound(), rulers.isRound_up());
 
         // VALIDACIÓN DE IMPORTE FINAL
         if (total_amount.compareTo(BigDecimal.ZERO) == 0) {
