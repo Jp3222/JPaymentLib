@@ -1,3 +1,7 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
 package jsoftware.com.jpaymentlib.model.l4b;
 
 import java.math.BigDecimal;
@@ -16,7 +20,7 @@ import jsoftware.com.jpaymentlib.util.FuncBusiness;
  *
  * @author JUAN PABLO CAMPOS CASASANERO
  * @since 2026-07-18
- * @version 1.5
+ * @version 1.6
  */
 public class Payment {
 
@@ -53,6 +57,7 @@ public class Payment {
 
     public BigDecimal calculation() throws PaymentException {
         if (Func.isNull(dto) || Func.isNull(dto.getImports()) || Func.isNull(dto.getRulers())) {
+            observations.append("DETALLE NULO");
             throw new PaymentException(1, "OBJETOS NO INICIALIZADOS");
         }
         PaymentImportDTO imports = dto.getImports();
@@ -60,24 +65,28 @@ public class Payment {
 
         // VALIDACIÓN DE IMPORTE INICIAL
         if (unit_amount.compareTo(BigDecimal.ZERO) == 0) {
+            observations.append("SUB TOTAL EN CEROS");
             throw new PaymentException(1, "SUB TOTAL EN CEROS: 0.00");
         }
         if (unit_amount.compareTo(BigDecimal.ZERO) < 0) {
+            observations.append("SUB TOTAL EN NEGATIVO");
             throw new PaymentException(1, "SUB TOTAL NEGATIVO: " + unit_amount.toPlainString());
         }
 
         PaymentRulersDTO rulers = dto.getRulers();
         observations = new StringBuilder();
+
         // CÁLCULO DE BASE SEGÚN UNIDADES
         variable = imports.isvariable();
         BigDecimal items = FuncBusiness.safeBigDecimal(imports.getUnits());
 
-        // SI ES VARIABLE EL CALCULO BASE SE MULIPLICA POR LOS ITEMS COLOCADOS
+        // SI ES VARIABLE EL CALCULO BASE SE MULTIPLICA POR LOS ITEMS COLOCADOS
         sub_total = FuncBusiness.variable(unit_amount, variable, items);
         total_amount = sub_total;
+
         // 1. APLICACIÓN DE SUBSIDIO
         if (rulers.isApply_rulers() && rulers.isApply_subsidy()) {
-            discount = discount.add(imports.getSubsidy()); // Corrección: reasignación por inmutabilidad
+            discount = discount.add(imports.getSubsidy());
             lbl_subsidy.setApply(rulers.isApply_subsidy());
             total_amount = lbl_subsidy.getTotal(total_amount, imports.getSubsidy());
             observations.append("APLICACION DE SUBSIDIO,");
@@ -85,30 +94,34 @@ public class Payment {
 
         // 2. APLICACIÓN DE DESCUENTOS
         if (rulers.isApply_rulers() && rulers.isApply_discount()) {
-            discount = discount.add(imports.getDiscount()); // Corrección: reasignación por inmutabilidad
+            discount = discount.add(imports.getDiscount());
             lbl_discount.setApply(rulers.isApply_discount());
             total_amount = lbl_discount.getTotal(total_amount, imports.getDiscount());
+            observations.append("APLICACION DE DESCUENTO,");
         }
 
-        //FECHA ACTUAL
+        int current_month = dto.getCurrent_month();
+        // FECHA ACTUAL
         LocalDate now = LocalDate.now();
-        //DIA DE PAGO(0 SI ES PAGO UNICO)
-        int pay_day = 0;
-        //BANDERA PARA INDICAR SI SE APLICA EL DIA DE PAGO
-        boolean apply_pay_day = pay_day == 0;
-        //SI pay_day ES DIFERENTE DE NULL SE EVAULA
-        if (Func.isNotNull(rulers.getPayday())) {
-            pay_day = rulers.getPayday();
-            //SI pay_day ES 0 ES PAGO UNICO(NO APLICA RECARGOS)
-            apply_pay_day = pay_day > 0 && now.getDayOfMonth() > pay_day;
+
+        // EVALUACIÓN DE VENCIMIENTO PARA RECARGOS
+        boolean apply_pay_day = false;
+        if (Func.isNotNull(rulers.getPayday()) && rulers.getPayday() > 0) {
+            int pay_day = rulers.getPayday();
+            // Un mes genera recargo si:
+            // A) El mes a pagar es anterior al mes actual (ej: Enero en curso de Noviembre).
+            // B) Es el mes actual (en curso), pero ya pasó el día límite de pago (ej: estamos a 7 y el payday era 1).
+            boolean is_past_month = current_month < now.getMonthValue();
+            boolean is_current_month_expired = (current_month == now.getMonthValue()) && (now.getDayOfMonth() > pay_day);
+            apply_pay_day = pay_day > 0 && (is_past_month || is_current_month_expired);
         }
 
         // 3. APLICACIÓN DE RECARGOS
-        //VALIDAMOS SI EL DIA DE PAGO Y LA REGLAS ASOCIADAS SON VALIDAS PARA RECARGOS
         if (apply_pay_day && rulers.isApply_surcharge()) {
-            surcharge = surcharge.add(imports.getSurcharge()); // Corrección: reasignación por inmutabilidad
+            surcharge = surcharge.add(imports.getSurcharge());
             lbl_surcharge.setApply(rulers.isApply_surcharge());
             total_amount = lbl_surcharge.getTotal(total_amount, imports.getSurcharge());
+            observations.append("APLICACION DE RECARGOS,");
         }
 
         // REDONDEO FINAL CONSOLIDADO (Evita errores acumulativos por centavos)
@@ -116,11 +129,15 @@ public class Payment {
 
         // VALIDACIÓN DE IMPORTE FINAL
         if (total_amount.compareTo(BigDecimal.ZERO) == 0) {
+            observations.append("SALDO EN CEROS");
             throw new PaymentException(1, "TOTAL EN CEROS: 0.00");
         }
         if (total_amount.compareTo(BigDecimal.ZERO) < 0) {
+            observations.append("SALDO NEGATIVO");
             throw new PaymentException(1, "TOTAL NEGATIVO: " + total_amount.toPlainString());
         }
+        //SIN COMPLICACIONES EN EL CALCULO
+        observations.append("S/C");
         return total_amount;
     }
 
@@ -162,5 +179,9 @@ public class Payment {
 
     public void setTotal_amount(BigDecimal total_amount) {
         this.total_amount = total_amount;
+    }
+
+    public StringBuilder getObservations() {
+        return observations;
     }
 }

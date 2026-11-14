@@ -111,7 +111,12 @@ public class PaymentDetailService extends AbstractService {
             // Instancia del motor analítico
             Payment pym = new Payment(i);
             BigDecimal total = pym.calculation();
-
+            detail.setDescription(concept.getName());
+            String toString = pym.getObservations().toString();
+            detail.setObservation(toString);
+            if (toString.contains("S/C")) {
+                detail.setStatus(1);
+            }
             // LÓGICA DE ASIGNACIÓN DE IMPORTES PROCESADOS POR EL MOTOR
             detail.setNo(j);
             detail.setQuantity(pym.isVariable() ? imports.getUnits() : 1);
@@ -128,11 +133,11 @@ public class PaymentDetailService extends AbstractService {
         return details;
     }
 
-    public List<PaymentDetailDTO> getDetailList(JDBConnection connection, List<Integer> concept_list, int specification_id) throws PaymentException, SQLException {
-        if (concept_list.isEmpty()) {
+    public List<PaymentDetailDTO> getDetailList(JDBConnection connection, List<Integer> month, int specification_id) throws PaymentException, SQLException {
+        if (month.isEmpty()) {
             throw new PaymentException(1, "LISTA DE ESPECIFICACIONES VACIA");
         }
-        //OBTENCION DE ESPECIFICACIONES
+        //ONTENCIO DE ESPECIFICACION
         Optional<PaymentSpecificationWrapperDTO> option = specification_service.getPaymentSpecification(connection, specification_id);
         if (option.isEmpty()) {
             throw new PaymentException(2, "LISTA DE ESPECIFICACIONES NO GENERADA");
@@ -142,9 +147,10 @@ public class PaymentDetailService extends AbstractService {
         List<PaymentDetailDTO> details = new ArrayList<>();
 
         PaymentSpecificationWrapperDTO i = option.get();
+        i.setMonth_list(month);
         int j = 1;
         // 2. LÓGICA DE COBRO Y CONSTRUCCIÓN DE DETALLES
-        for (Integer k : concept_list) {
+        for (Integer k : month) {
             PaymentSpecificationDTO specification = i.getSpecification();
             LocalDate now = LocalDate.now();
 
@@ -181,8 +187,14 @@ public class PaymentDetailService extends AbstractService {
 
             // Instancia del motor analítico
             Payment pym = new Payment(i);
+            i.setCurrent_month(k);
             BigDecimal total = pym.calculation();
-
+            detail.setDescription("MENSUALIDAD DEL MES DE: " + specification_service.getMonths().get(k - 1).getMonth_name());
+            String toString = pym.getObservations() + ", " + specification_service.getMonths().get(k - 1).getShort_name();
+            detail.setObservation(toString);
+            if (toString.contains("S/C")) {
+                detail.setStatus(1);
+            }
             // LÓGICA DE ASIGNACIÓN DE IMPORTES PROCESADOS POR EL MOTOR
             detail.setNo(j);
             detail.setQuantity(pym.isVariable() ? imports.getUnits() : 1);
@@ -192,6 +204,7 @@ public class PaymentDetailService extends AbstractService {
             detail.setDiscount(pym.getDiscount());
             detail.setTotal_amount(total);
             detail.setFiscal_year(now.getYear());
+            detail.setPeriod_date(LocalDate.of(now.getYear(), k, i.getRulers().getPayday()));
             // SOLUCIÓN CRÍTICA 3: Agregar el detalle construido a la lista final de retorno
             details.add(detail);
             j++;

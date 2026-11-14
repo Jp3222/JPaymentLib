@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import jsoftware.com.jpaymentlib.model.dto.PaymentSpecificationDTO;
+import jsoftware.com.jpaymentlib.model.service.PaymentSpecificationService;
 import jsoftware.com.jutil.db.JDBConnection;
 
 /**
@@ -122,5 +123,9 @@ public class PaymentSpecificationDAO {
         }
 
         return Optional.empty();
+    }
+
+    public boolean insert(JDBConnection connection, PaymentSpecificationDTO specification) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 }

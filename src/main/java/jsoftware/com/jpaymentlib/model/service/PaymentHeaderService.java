@@ -88,6 +88,9 @@ public class PaymentHeaderService extends AbstractService {
         header.setDiscount(discount);
         header.setSurcharge(surcharge);
         header.setTotal_amount(total_amount);
+        header.setApply_discount(discount.compareTo(BigDecimal.ZERO) > 0);
+        header.setApply_surcharge(surcharge.compareTo(BigDecimal.ZERO) > 0);
+        header.setStatus(1);
         return Optional.of(header);
     }
 

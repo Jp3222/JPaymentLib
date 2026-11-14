@@ -4,15 +4,20 @@
  */
 package jsoftware.com.jpaymentlib.model.service;
 
+import java.net.UnknownHostException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import jsoftware.com.jblue.model.abst.AbstractService;
-import jsoftware.com.jpaymentlib.model.dao.PaymentConceptDAO;
-import jsoftware.com.jpaymentlib.model.dao.PaymentImportDAO;
-import jsoftware.com.jpaymentlib.model.dao.PaymentRulersDAO;
+import jsoftware.com.jblue.model.dto.ProgramHistoryDTO;
+import jsoftware.com.jblue.model.exp.ServiceException;
+import jsoftware.com.jblue.model.exp.imp.CorruptInsertionException;
+import jsoftware.com.jblue.model.exp.imp.KeyNotGenerateException;
+import jsoftware.com.jblue.model.service.HistoryService;
+import jsoftware.com.jblue.sys.SystemSession;
+import jsoftware.com.jpaymentlib.model.dao.PaymentDAO;
 import jsoftware.com.jpaymentlib.model.dao.PaymentSpecificationDAO;
 import jsoftware.com.jpaymentlib.model.dto.MonthDTO;
 import jsoftware.com.jpaymentlib.model.dto.PaymentConceptDTO;
@@ -21,6 +26,7 @@ import jsoftware.com.jpaymentlib.model.dto.PaymentRulersDTO;
 import jsoftware.com.jpaymentlib.model.dto.PaymentSpecificationDTO;
 import jsoftware.com.jpaymentlib.model.dto.wrp.PaymentSpecificationWrapperDTO;
 import jsoftware.com.jpaymentlib.model.exp.PaymentException;
+import jsoftware.com.jpaymentlib.util.Func;
 import jsoftware.com.jutil.db.JDBConnection;
 
 /**
@@ -30,16 +36,80 @@ import jsoftware.com.jutil.db.JDBConnection;
 public class PaymentSpecificationService extends AbstractService {
 
     private final PaymentSpecificationDAO specification_dao;
-    private final PaymentConceptDAO concept_dao;
-    private final PaymentRulersDAO rulers_dao;
-    private final PaymentImportDAO imports_dao;
+    private final PaymentConceptService concept_dao;
+    private final PaymentRulerService rulers_dao;
+    private final PaymentImportService imports_dao;
+    private final PaymentDAO dao;
+    private final HistoryService hys_service;
 
     public PaymentSpecificationService(boolean dev_flag, String process_name) {
         super(dev_flag, process_name);
+        dao = new PaymentDAO();
+        hys_service = new HistoryService(dev_flag, process_name);
         specification_dao = new PaymentSpecificationDAO();
-        concept_dao = new PaymentConceptDAO(dev_flag, process_name);
-        rulers_dao = new PaymentRulersDAO();
-        imports_dao = new PaymentImportDAO();
+        concept_dao = new PaymentConceptService(dev_flag, process_name);
+        rulers_dao = new PaymentRulerService(dev_flag, process_name);
+        imports_dao = new PaymentImportService(dev_flag, process_name);
+    }
+
+    public boolean save(JDBConnection connection, SystemSession ss, PaymentSpecificationWrapperDTO wrp) {
+        boolean res = false;
+        try {
+            String sequence = dao.getNextValString(connection, "CONCEPTOS_PAGO");
+            // Asegúrate de que esta validación verifique si FALLÓ en obtenerse (ej. isNull)
+            if (Func.isNullEmptyBlank(sequence)) {
+                returnMessageError("NO SE PUDO GENERAR UNA SECUENCIA PARA EL CONCEPTO");
+                return false;
+            }
+            res = concept_dao.save(connection, ss, wrp.getConcepts());
+            if (!res || concept_dao.isError()) {
+                rollback(connection);
+                return returnMessageError(concept_dao.getErrorCode(), concept_dao.getUserMessage());
+            }
+            if (!res || imports_dao.isError()) {
+                rollback(connection);
+                return returnMessageError(imports_dao.getErrorCode(), imports_dao.getUserMessage());
+            }
+
+            // 3. Reglas (Opcional si viene en la sobrecarga)
+            if (wrp.getRulers() != null) {
+                rulers_dao.save(connection, ss, wrp.getRulers());
+                if (!res || rulers_dao.isError()) {
+                    rollback(connection);
+                    return returnMessageError(rulers_dao.getErrorCode(), rulers_dao.getUserMessage());
+                }
+            }
+            if (wrp.getSpecification() != null) {
+                // Nota: ajusta los campos ID o lógica de setters si aplican a rulers
+                if (!specification_dao.insert(connection, wrp.getSpecification())) {
+                    rollback(connection);
+                    return returnMessageError("NO SE PUDO REGISTRAR LA ESPECIFICACIO DE PAGO");
+                }
+
+                ProgramHistoryDTO history3 = ss.getProgramHistoryDTO(118, wrp.getSpecification().getId());
+                if (hys_service.insert(connection, ss, history3)) {
+                    rollback(connection);
+                    return returnMessageError("REGISTRO EN BITACORA CORRUPTO");
+                }
+            }
+            // Si todo salió bien, marcamos res como true
+            res = true;
+        } catch (SQLException | PaymentException | ServiceException | UnknownHostException | CorruptInsertionException | KeyNotGenerateException ex) {
+            res = false;
+            returnMessageError(SERVICE_EXECUTE_ERROR, "ERROR EN LA OPERACIÓN: " + ex.getMessage());
+        } finally {
+            if (res) {
+                commit(connection);
+                returnMessageError(SERVICE_EXECUTE_OK, "OPERACION EXITOSA");
+            } else {
+                rollback(connection);
+            }
+            // Restaurar el estado original del autocommit al final absoluto
+            if (connection != null) {
+                connection.setAutoCommit(true);
+            }
+        }
+        return res;
     }
 
     public List<PaymentSpecificationWrapperDTO> getPaymentSpecification(JDBConnection connection, List<Integer> specification_list) throws SQLException, PaymentException {
@@ -123,7 +193,10 @@ public class PaymentSpecificationService extends AbstractService {
 
     public List<MonthDTO> getMonths(List<Integer> list) {
         return months.stream().filter((t) -> list.contains(t.getMonth_id())).toList();
+    }
 
+    public List<MonthDTO> getMonths() {
+        return months;
     }
 
     private MonthDTO ENE = new MonthDTO(1, "ENERO", "ENE");

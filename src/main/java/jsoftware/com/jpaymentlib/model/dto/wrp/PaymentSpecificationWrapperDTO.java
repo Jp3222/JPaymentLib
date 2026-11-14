@@ -4,6 +4,7 @@
  */
 package jsoftware.com.jpaymentlib.model.dto.wrp;
 
+import java.util.List;
 import java.util.Objects;
 import jsoftware.com.jpaymentlib.model.dto.PaymentConceptDTO;
 import jsoftware.com.jpaymentlib.model.dto.PaymentImportDTO;
@@ -21,6 +22,8 @@ public class PaymentSpecificationWrapperDTO extends JDBMapObject {
     private PaymentConceptDTO concepts;
     private PaymentImportDTO imports;
     private PaymentRulersDTO rulers;
+    private List<Integer> month_list;
+    private int current_month;
 
     public PaymentSpecificationWrapperDTO() {
     }
@@ -55,6 +58,22 @@ public class PaymentSpecificationWrapperDTO extends JDBMapObject {
 
     public void setRulers(PaymentRulersDTO rulers) {
         this.rulers = rulers;
+    }
+
+    public List<Integer> getMonth_list() {
+        return month_list;
+    }
+
+    public void setMonth_list(List<Integer> month_list) {
+        this.month_list = month_list;
+    }
+
+    public int getCurrent_month() {
+        return current_month;
+    }
+
+    public void setCurrent_month(int current_month) {
+        this.current_month = current_month;
     }
 
     @Override
@@ -93,7 +112,16 @@ public class PaymentSpecificationWrapperDTO extends JDBMapObject {
 
     @Override
     public String toString() {
-        return "PaymentSpecificationWrapperDTO{" + "specification=" + specification + ", concepts=" + concepts + ", imports=" + imports + ", rulers=" + rulers + '}';
+        StringBuilder sb = new StringBuilder();
+        sb.append("PaymentSpecificationWrapperDTO{");
+        sb.append("specification=").append(specification);
+        sb.append(", concepts=").append(concepts);
+        sb.append(", imports=").append(imports);
+        sb.append(", rulers=").append(rulers);
+        sb.append(", month_list=").append(month_list);
+        sb.append(", current_month=").append(current_month);
+        sb.append('}');
+        return sb.toString();
     }
 
 }

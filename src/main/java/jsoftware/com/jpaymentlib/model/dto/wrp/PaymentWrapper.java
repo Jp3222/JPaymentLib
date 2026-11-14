@@ -11,6 +11,7 @@ import jsoftware.com.jpaymentlib.model.dto.PaymentDTO;
 import jsoftware.com.jpaymentlib.model.dto.PaymentDetailDTO;
 import jsoftware.com.jpaymentlib.model.dto.PaymentHeaderDTO;
 import jsoftware.com.jpaymentlib.model.dto.PaymentLinesDTO;
+import jsoftware.com.jpaymentlib.model.dto.PaymentWaterIntakeUser;
 
 /**
  * Envoltorio que contiene la cabezera y la lista de detalles de pago generados
@@ -24,6 +25,7 @@ public class PaymentWrapper {
     private List<PaymentDetailDTO> detail;
     private PaymentLinesDTO line;
     private PaymentDTO payment;
+    private PaymentWaterIntakeUser payment_water_intake_user;
     private PaymentSpecificationWrapperDTO specification_list;
 
     public PaymentWrapper() {
@@ -70,6 +72,14 @@ public class PaymentWrapper {
 
     public void setPayment(PaymentDTO payment) {
         this.payment = payment;
+    }
+
+    public PaymentWaterIntakeUser getPayment_water_intake_user() {
+        return payment_water_intake_user;
+    }
+
+    public void setPayment_water_intake_user(PaymentWaterIntakeUser payment_water_intake_user) {
+        this.payment_water_intake_user = payment_water_intake_user;
     }
 
     public PaymentSpecificationWrapperDTO getSpecification_list() {
@@ -122,11 +132,13 @@ public class PaymentWrapper {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("PaymentWrapper{");
-        sb.append("header=").append(header);
-        sb.append(", detail=").append(detail);
-        sb.append(", line=").append(line);
-        sb.append(", payment=").append(payment);
-        sb.append(", dto=").append(specification_list);
+        sb.append("\nconcept_list=").append(concept_list);
+        sb.append(",\nheader=").append(header);
+        sb.append(",\ndetail=").append(detail);
+        sb.append(",\nline=").append(line);
+        sb.append(",\npayment=").append(payment);
+        sb.append(",\npayment_water_intake_user=").append(payment_water_intake_user);
+        sb.append(",\nspecification_list=").append(specification_list);
         sb.append('}');
         return sb.toString();
     }

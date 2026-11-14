@@ -252,28 +252,28 @@ public class PaymentHeaderDTO implements Serializable, Comparable<PaymentHeaderD
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("PaymentHeaderDTO{");
-        sb.append("id=").append(id);
-        sb.append(", payment_id=").append(payment_id);
-        sb.append(", uuid=").append(uuid);
-        sb.append(", user_id=").append(user_id);
-        sb.append(", fiscal_year=").append(fiscal_year);
-        sb.append(", cash_box_turn_id=").append(cash_box_turn_id);
-        sb.append(", authorized_by=").append(authorized_by);
-        sb.append(", apply_discount=").append(apply_discount);
-        sb.append(", apply_surcharge=").append(apply_surcharge);
-        sb.append(", subtotal=").append(subtotal);
-        sb.append(", discount=").append(discount);
-        sb.append(", total_surcharge=").append(surcharge);
-        sb.append(", total_amount=").append(total_amount);
-        sb.append(", amount_received=").append(amount_received);
-        sb.append(", change_returned=").append(change_returned);
-        sb.append(", transaction_reference=").append(transaction_reference);
-        sb.append(", status=").append(status);
-        sb.append(", date_update=").append(date_update);
-        sb.append(", date_register=").append(date_register);
-        sb.append(", date_end=").append(date_end);
-        sb.append('}');
+        sb.append("\nPaymentHeaderDTO{");
+        sb.append("\n id=").append(id);
+        sb.append(",\n payment_id=").append(payment_id);
+        sb.append(",\n uuid=").append(uuid);
+        sb.append(",\n user_id=").append(user_id);
+        sb.append(",\n fiscal_year=").append(fiscal_year);
+        sb.append(",\n cash_box_turn_id=").append(cash_box_turn_id);
+        sb.append(",\n authorized_by=").append(authorized_by);
+        sb.append(",\n apply_discount=").append(apply_discount);
+        sb.append(",\n apply_surcharge=").append(apply_surcharge);
+        sb.append(",\n subtotal=").append(subtotal);
+        sb.append(",\n discount=").append(discount);
+        sb.append(",\n total_surcharge=").append(surcharge);
+        sb.append(",\n total_amount=").append(total_amount);
+        sb.append(",\n amount_received=").append(amount_received);
+        sb.append(",\n change_returned=").append(change_returned);
+        sb.append(",\n transaction_reference=").append(transaction_reference);
+        sb.append(",\n status=").append(status);
+        sb.append(",\n date_update=").append(date_update);
+        sb.append(",\n date_register=").append(date_register);
+        sb.append(",\n date_end=").append(date_end);
+        sb.append("\n}");
         return sb.toString();
     }
 

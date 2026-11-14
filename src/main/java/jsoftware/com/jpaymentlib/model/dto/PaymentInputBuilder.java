@@ -4,43 +4,57 @@
  */
 package jsoftware.com.jpaymentlib.model.dto;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  *
  * @author juanp
  */
 public class PaymentInputBuilder {
 
-    private int employee_id;
+    private static final long serialVersionUID = 1L;
+
+    // DATOS DE LA ESPECIFICACION //
     private int committee_id;
     private int office_id;
-    private int status;
+    private int status_id;
+
+    //DATOS DE AUDITORIA
+    private int employee_id;
+
+    //DATOS DEL CONTRIBUYENTE
+    private int water_intake_user_id;
     private int user_id;
-    private int wki_id;
-    private int process_type_id;
+    private String water_intake_number;
+
+    // DATOS PARA EL COBRO DE MENSUALIDADES //
+    private List<Integer> month_list;
+    private int months_paid;
+
+    // DATOS PARA EL COBRO DE UN TRAMITE //
     private int process_id;
-    private boolean quote_for_process;
-    private int payment_type_id;
-    private int payment_method_id;
+    private int process_type_id;
+
+    // DATOS PARA COBRAR OTROS EJERCICIOS FISCALES
+    private Map<Integer, List<Integer>> map;
+
+    // TIPO DE SERVICIO A USAR //
+    private int service_type;
 
     public PaymentInputBuilder() {
-        this.employee_id = -1;
         this.committee_id = -1;
         this.office_id = -1;
-        this.status = -1;
+        this.status_id = -1;
+        this.employee_id = -1;
+        this.water_intake_user_id = -1;
         this.user_id = -1;
-        this.wki_id = -1;
-        this.process_type_id = -1;
+        this.water_intake_number = null;
+        this.month_list = null;
+        this.months_paid = -1;
         this.process_id = -1;
-        this.quote_for_process = false;
-    }
-
-    public int getEmployee_id() {
-        return employee_id;
-    }
-
-    public PaymentInputBuilder setEmployee_id(int employee_id) {
-        this.employee_id = employee_id;
-        return this;
+        this.process_type_id = -1;
+        this.map = null;
     }
 
     public int getCommittee_id() {
@@ -61,12 +75,30 @@ public class PaymentInputBuilder {
         return this;
     }
 
-    public int getStatus() {
-        return status;
+    public int getStatus_id() {
+        return status_id;
     }
 
-    public PaymentInputBuilder setStatus(int status) {
-        this.status = status;
+    public PaymentInputBuilder setStatus_id(int status_id) {
+        this.status_id = status_id;
+        return this;
+    }
+
+    public int getEmployee_id() {
+        return employee_id;
+    }
+
+    public PaymentInputBuilder setEmployee_id(int employee_id) {
+        this.employee_id = employee_id;
+        return this;
+    }
+
+    public int getWater_intake_user_id() {
+        return water_intake_user_id;
+    }
+
+    public PaymentInputBuilder setWater_intake_user_id(int water_intake_user_id) {
+        this.water_intake_user_id = water_intake_user_id;
         return this;
     }
 
@@ -79,21 +111,30 @@ public class PaymentInputBuilder {
         return this;
     }
 
-    public int getWki_id() {
-        return wki_id;
+    public String getWater_intake_number() {
+        return water_intake_number;
     }
 
-    public PaymentInputBuilder setWki_id(int wki_id) {
-        this.wki_id = wki_id;
+    public PaymentInputBuilder setWater_intake_number(String water_intake_number) {
+        this.water_intake_number = water_intake_number;
         return this;
     }
 
-    public int getProcess_type_id() {
-        return process_type_id;
+    public List<Integer> getMonth_list() {
+        return month_list;
     }
 
-    public PaymentInputBuilder setProcess_type_id(int process_type_id) {
-        this.process_type_id = process_type_id;
+    public PaymentInputBuilder setMonth_list(List<Integer> month_list) {
+        this.month_list = month_list;
+        return this;
+    }
+
+    public int getMonths_paid() {
+        return months_paid;
+    }
+
+    public PaymentInputBuilder setMonths_paid(int months_paid) {
+        this.months_paid = months_paid;
         return this;
     }
 
@@ -106,51 +147,45 @@ public class PaymentInputBuilder {
         return this;
     }
 
-    public boolean isQuote_for_process() {
-        return quote_for_process;
+    public int getProcess_type_id() {
+        return process_type_id;
     }
 
-    public PaymentInputBuilder setQuote_for_process(boolean quote_for_process) {
-        this.quote_for_process = quote_for_process;
+    public PaymentInputBuilder setProcess_type_id(int process_type_id) {
+        this.process_type_id = process_type_id;
         return this;
     }
 
-    public int getPayment_type_id() {
-        return payment_type_id;
+    public Map<Integer, List<Integer>> getMap() {
+        return map;
     }
 
-    public PaymentInputBuilder setPayment_type_id(int payment_type_id) {
-        this.payment_type_id = payment_type_id;
+    public PaymentInputBuilder setMap(Map<Integer, List<Integer>> map) {
+        this.map = map;
         return this;
     }
 
-    public int getPayment_method_id() {
-        return payment_method_id;
+    public int getService_type() {
+        return service_type;
     }
 
-    public PaymentInputBuilder setPayment_method_id(int payment_method_id) {
-        this.payment_method_id = payment_method_id;
+    public PaymentInputBuilder setService_type(int service_type) {
+        this.service_type = service_type;
         return this;
     }
-    
-    public PaymentInputDTO builder(){
+
+    public PaymentInputDTO buildCalculateMonthlyPayment() {
+        this.service_type = 2; // Ajusta según el ID del servicio de mensualidades
         return new PaymentInputDTO(this);
     }
 
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("PaymentInput{");
-        sb.append("employee_id=").append(employee_id);
-        sb.append(", committee_id=").append(committee_id);
-        sb.append(", office_id=").append(office_id);
-        sb.append(", status=").append(status);
-        sb.append(", user_id=").append(user_id);
-        sb.append(", wki_id=").append(wki_id);
-        sb.append(", process_type_id=").append(process_type_id);
-        sb.append(", process_id=").append(process_id);
-        sb.append('}');
-        return sb.toString();
+    public PaymentInputDTO buildCalculateQuote() {
+        this.service_type = 1; // Corregido: Asignar el ID correcto para cotizaciones (ej. 2)
+        return new PaymentInputDTO(this);
     }
 
+    public PaymentInputDTO buildSavePayment() {
+        this.service_type = 3; // Corregido: Asignar el ID correcto para cotizaciones (ej. 2)
+        return new PaymentInputDTO(this);
+    }
 }

@@ -7,8 +7,10 @@ package jsoftware.com.jpaymentlib.model.dao;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import jsoftware.com.jblue.model.exp.DataAccesObjectException;
 import jsoftware.com.jutil.db.JDBConnection;
 
 /**
@@ -17,11 +19,14 @@ import jsoftware.com.jutil.db.JDBConnection;
  */
 public class SysPaymentDAO {
 
-    public List<Integer> getconceptList(JDBConnection connection, int process_type) throws SQLException {
+    public List<Integer> getconceptList(JDBConnection connection, int process, int committee, int office) throws SQLException {
         List<Integer> list = new ArrayList<>(15);
-        String query = "SELECT specification_id FROM sys_pym_concept WHERE process_id = ? AND status = 1";
+        String query = "SELECT specification_id FROM sys_pym_concept "
+                + "WHERE process_id = ? AND committee_id = ? AND  office = ? AND status = 1";
         try (PreparedStatement ps = connection.getNewPreparedStatement(query)) {
-            ps.setInt(1, process_type);
+            ps.setInt(1, process);
+            ps.setInt(2, committee);
+            ps.setInt(3, office);
             try (ResultSet rs = ps.executeQuery();) {
                 while (rs.next()) {
                     list.add(rs.getInt(1));
@@ -30,18 +35,29 @@ public class SysPaymentDAO {
         }
         return list;
     }
-    
-    public List<Integer> getSpecification(JDBConnection connection, int specification_id) throws SQLException {
+
+    public int getSpecification(JDBConnection connection, int water_intake_user_id) throws SQLException, DataAccesObjectException {
         List<Integer> list = new ArrayList<>(15);
-        String query = "SELECT specification_id FROM pym_payment_specification WHERE id = ? AND status = 1";
+        String query = """
+                       SELECT ID_ESPECIFICACION FROM vwc_specification_by_wki_user 
+                       WHERE id_toma = ? 
+                       AND FISCAL_YEAR = ?
+                       AND CURRENT_DATE 
+                       BETWEEN FECHA_INICIO 
+                       AND FECHA_FIN
+                       """;
         try (PreparedStatement ps = connection.getNewPreparedStatement(query)) {
-            ps.setInt(1, specification_id);
+            ps.setInt(1, water_intake_user_id);
+            ps.setInt(2, LocalDate.now().getYear());
             try (ResultSet rs = ps.executeQuery();) {
                 while (rs.next()) {
                     list.add(rs.getInt(1));
                 }
             }
         }
-        return list;
+        if (!list.isEmpty() && list.size() > 1) {
+            throw new DataAccesObjectException("LA TOMA REGISTRADA TIENE MAS DE UNA ESPECIFICACION DE PAGO");
+        }
+        return list.getFirst();
     }
 }
