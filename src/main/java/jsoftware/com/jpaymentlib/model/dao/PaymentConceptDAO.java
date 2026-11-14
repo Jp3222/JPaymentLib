@@ -7,8 +7,11 @@ package jsoftware.com.jpaymentlib.model.dao;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import jsoftware.com.jpaymentlib.model.dto.PaymentConceptDTO;
+import jsoftware.com.jpaymentlib.model.exp.PaymentException;
 import jsoftware.com.jutil.db.JDBConnection;
 import jsoftware.com.jutil.model.AbstractDAO;
 
@@ -20,6 +23,43 @@ public class PaymentConceptDAO extends AbstractDAO {
 
     public PaymentConceptDAO(boolean flag_dev_log, String name_module) {
         super(flag_dev_log, name_module);
+    }
+
+    public boolean insert(JDBConnection connection, PaymentConceptDTO dto) throws SQLException, PaymentException {
+        boolean res = false;
+        String query = """
+                       INSERT INTO pym_payment_concept
+                       (sequence, name, description, document_id, based_on_document, office_id, last_employee_update) 
+                       VALUES(?,?,?,?,?,1,?,?)
+                       """;
+        try (PreparedStatement ps = connection.getNewPreparedStatement(query, PreparedStatement.RETURN_GENERATED_KEYS)) {
+            ps.setInt(1, dto.getSequence());
+            ps.setString(2, dto.getName());
+            ps.setString(3, dto.getDescription());
+            if (dto.getDocument_id() == -1) {
+                ps.setNull(4, Types.INTEGER);
+            } else {
+                ps.setInt(4, dto.getDocument_id());
+            }
+            ps.setString(5, dto.getBased_on_document());
+            ps.setInt(6, dto.getOffice_id());
+            ps.setInt(7, dto.getLast_employee_update());
+            int affected_row = ps.executeUpdate();
+            res = affected_row == 1;
+            if (!res) {
+                return res;
+            }
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                res = rs.next();
+                if (!res) {
+                    throw new PaymentException(1, "LLAVE PRIMARIA NO GENERADA");
+                }
+                dto.setId(rs.getInt("id"));
+                dto.setDate_register(LocalDateTime.now());
+                dto.setDate_update(LocalDateTime.now());
+            }
+        }
+        return res;
     }
 
     public Optional<PaymentConceptDTO> getConceptList(JDBConnection connection, int concept_id) throws SQLException {
