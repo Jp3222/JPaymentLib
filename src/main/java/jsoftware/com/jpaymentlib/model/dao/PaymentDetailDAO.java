@@ -40,11 +40,12 @@ public class PaymentDetailDAO extends AbstractDAO {
         String query = """
                        INSERT INTO pym_payment_detail
                        (
-                           payment_id, no, payment_concept_id, specification_id, 
-                           period_date, fiscal_year, quantity, unit_price, 
-                           subtotal, discount, surcharge, total_amount, status
+                            payment_id, no, payment_concept_id, specification_id, 
+                            concept, description, observations, period_date, 
+                            fiscal_year, quantity, unit_price, subtotal, discount, 
+                            surcharge, total_amount
                        ) 
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                        """;
 
         try (PreparedStatement ps = connection.getNewPreparedStatement(query)) {
@@ -61,36 +62,39 @@ public class PaymentDetailDAO extends AbstractDAO {
                 // 4. specification_id (int)
                 ps.setInt(4, dto.getSpecification_id());
 
+                ps.setString(5, dto.getConcept());
+                
+                ps.setString(6, dto.getDescription());
+                
+                ps.setString(7, dto.getObservation());
+                
                 // 5. period_date (LocalDate -> java.sql.Date)
                 if (dto.getPeriod_date() != null) {
-                    ps.setDate(5, Date.valueOf(dto.getPeriod_date()));
+                    ps.setDate(8, Date.valueOf(dto.getPeriod_date()));
                 } else {
-                    ps.setNull(5, java.sql.Types.DATE);
+                    ps.setNull(8, java.sql.Types.DATE);
                 }
 
                 // 6. fiscal_year (int)
-                ps.setInt(6, dto.getFiscal_year());
+                ps.setInt(9, dto.getFiscal_year());
 
                 // 7. quantity (int)
-                ps.setInt(7, dto.getQuantity());
+                ps.setInt(10, dto.getQuantity());
 
                 // 8. unit_price (BigDecimal)
-                ps.setBigDecimal(8, dto.getUnit_price());
+                ps.setBigDecimal(11, dto.getUnit_price());
 
                 // 9. subtotal (BigDecimal)
-                ps.setBigDecimal(9, dto.getSubtotal());
+                ps.setBigDecimal(12, dto.getSubtotal());
 
                 // 10. discount (BigDecimal)
-                ps.setBigDecimal(10, dto.getDiscount());
+                ps.setBigDecimal(13, dto.getDiscount());
 
                 // 11. surcharge (BigDecimal)
-                ps.setBigDecimal(11, dto.getSurcharge());
+                ps.setBigDecimal(14, dto.getSurcharge());
 
                 // 12. total_amount (BigDecimal)
-                ps.setBigDecimal(12, dto.getTotal_amount());
-
-                // 13. status (int)
-                ps.setInt(13, dto.getStatus());
+                ps.setBigDecimal(15, dto.getTotal_amount());
 
                 ps.addBatch();
             }

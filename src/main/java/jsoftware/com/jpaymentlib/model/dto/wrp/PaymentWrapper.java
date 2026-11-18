@@ -4,14 +4,14 @@
  */
 package jsoftware.com.jpaymentlib.model.dto.wrp;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import jsoftware.com.jpaymentlib.model.dto.OperationDTO;
 import jsoftware.com.jpaymentlib.model.dto.PaymentDTO;
 import jsoftware.com.jpaymentlib.model.dto.PaymentDetailDTO;
 import jsoftware.com.jpaymentlib.model.dto.PaymentHeaderDTO;
 import jsoftware.com.jpaymentlib.model.dto.PaymentLinesDTO;
-import jsoftware.com.jpaymentlib.model.dto.PaymentWaterIntakeUser;
+import jsoftware.com.jpaymentlib.model.dto.PaymentReprintDTO;
+import jsoftware.com.jpaymentlib.model.dto.PaymentWaterIntakeUserDTO;
 
 /**
  * Envoltorio que contiene la cabezera y la lista de detalles de pago generados
@@ -20,26 +20,38 @@ import jsoftware.com.jpaymentlib.model.dto.PaymentWaterIntakeUser;
  */
 public class PaymentWrapper {
 
-    private List<Integer> concept_list;
+    private PaymentDTO payment;
     private PaymentHeaderDTO header;
     private List<PaymentDetailDTO> detail;
+    private PaymentReprintDTO reprint;
+    private PaymentWaterIntakeUserDTO payment_water_intake_user;
     private PaymentLinesDTO line;
-    private PaymentDTO payment;
-    private PaymentWaterIntakeUser payment_water_intake_user;
+    private OperationDTO operation;
+    private List<Integer> concept_list;
     private PaymentSpecificationWrapperDTO specification_list;
+    private boolean payment_line;
+    private boolean paid;
 
     public PaymentWrapper() {
-        this.header = new PaymentHeaderDTO();
-        this.detail = new ArrayList<>();
-        this.line = new PaymentLinesDTO();
+        this.payment = null;
+        this.header = null;
+        this.detail = null;
+        this.reprint = null;
+        this.payment_water_intake_user = null;
+        this.line = null;
+        this.operation = null;
+        this.concept_list = null;
+        this.specification_list = null;
+        this.payment_line = false;
+        this.paid = false;
     }
 
-    public List<Integer> getConcept_list() {
-        return concept_list;
+    public PaymentDTO getPayment() {
+        return payment;
     }
 
-    public void setConcept_list(List<Integer> concept_list) {
-        this.concept_list = concept_list;
+    public void setPayment(PaymentDTO payment) {
+        this.payment = payment;
     }
 
     public PaymentHeaderDTO getHeader() {
@@ -58,6 +70,22 @@ public class PaymentWrapper {
         this.detail = detail;
     }
 
+    public PaymentReprintDTO getReprint() {
+        return reprint;
+    }
+
+    public void setReprint(PaymentReprintDTO reprint) {
+        this.reprint = reprint;
+    }
+
+    public PaymentWaterIntakeUserDTO getPayment_water_intake_user() {
+        return payment_water_intake_user;
+    }
+
+    public void setPayment_water_intake_user(PaymentWaterIntakeUserDTO payment_water_intake_user) {
+        this.payment_water_intake_user = payment_water_intake_user;
+    }
+
     public PaymentLinesDTO getLine() {
         return line;
     }
@@ -66,20 +94,20 @@ public class PaymentWrapper {
         this.line = line;
     }
 
-    public PaymentDTO getPayment() {
-        return payment;
+    public OperationDTO getOperation() {
+        return operation;
     }
 
-    public void setPayment(PaymentDTO payment) {
-        this.payment = payment;
+    public void setOperation(OperationDTO operation) {
+        this.operation = operation;
     }
 
-    public PaymentWaterIntakeUser getPayment_water_intake_user() {
-        return payment_water_intake_user;
+    public List<Integer> getConcept_list() {
+        return concept_list;
     }
 
-    public void setPayment_water_intake_user(PaymentWaterIntakeUser payment_water_intake_user) {
-        this.payment_water_intake_user = payment_water_intake_user;
+    public void setConcept_list(List<Integer> concept_list) {
+        this.concept_list = concept_list;
     }
 
     public PaymentSpecificationWrapperDTO getSpecification_list() {
@@ -90,55 +118,37 @@ public class PaymentWrapper {
         this.specification_list = specification_list;
     }
 
-    @Override
-    public int hashCode() {
-        int hash = 3;
-        hash = 61 * hash + Objects.hashCode(this.header);
-        hash = 61 * hash + Objects.hashCode(this.detail);
-        hash = 61 * hash + Objects.hashCode(this.line);
-        hash = 61 * hash + Objects.hashCode(this.payment);
-        hash = 61 * hash + Objects.hashCode(this.specification_list);
-        return hash;
+    public boolean isPayment_line() {
+        return payment_line;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final PaymentWrapper other = (PaymentWrapper) obj;
-        if (!Objects.equals(this.header, other.header)) {
-            return false;
-        }
-        if (!Objects.equals(this.detail, other.detail)) {
-            return false;
-        }
-        if (!Objects.equals(this.line, other.line)) {
-            return false;
-        }
-        if (!Objects.equals(this.payment, other.payment)) {
-            return false;
-        }
-        return Objects.equals(this.specification_list, other.specification_list);
+    public void setPayment_line(boolean payment_line) {
+        this.payment_line = payment_line;
+    }
+
+    public boolean isPaid() {
+        return paid;
+    }
+
+    public void setPaid(boolean paid) {
+        this.paid = paid;
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("PaymentWrapper{");
-        sb.append("\nconcept_list=").append(concept_list);
-        sb.append(",\nheader=").append(header);
-        sb.append(",\ndetail=").append(detail);
-        sb.append(",\nline=").append(line);
-        sb.append(",\npayment=").append(payment);
-        sb.append(",\npayment_water_intake_user=").append(payment_water_intake_user);
-        sb.append(",\nspecification_list=").append(specification_list);
+        sb.append("payment=").append(payment);
+        sb.append(", header=").append(header);
+        sb.append(", detail=").append(detail);
+        sb.append(", reprint=").append(reprint);
+        sb.append(", payment_water_intake_user=").append(payment_water_intake_user);
+        sb.append(", line=").append(line);
+        sb.append(", operation=").append(operation);
+        sb.append(", concept_list=").append(concept_list);
+        sb.append(", specification_list=").append(specification_list);
+        sb.append(", payment_line=").append(payment_line);
+        sb.append(", paid=").append(paid);
         sb.append('}');
         return sb.toString();
     }

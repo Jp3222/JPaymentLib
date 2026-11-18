@@ -22,9 +22,8 @@ public class PaymentHeaderDTO implements Serializable, Comparable<PaymentHeaderD
     private long id;
     private long payment_id;
     private String uuid;
-    private int user_id;
-    private long fiscal_year;
-    private long cash_box_turn_id;
+    private int fiscal_year;
+    private int cash_box_turn_id;
     private int authorized_by;
     private boolean apply_discount;
     private boolean apply_surcharge;
@@ -44,7 +43,6 @@ public class PaymentHeaderDTO implements Serializable, Comparable<PaymentHeaderD
         this.id = -1;
         this.payment_id = -1;
         this.uuid = null;
-        this.user_id = -1;
         this.fiscal_year = -1;
         this.cash_box_turn_id = -1;
         this.authorized_by = -1;
@@ -87,27 +85,19 @@ public class PaymentHeaderDTO implements Serializable, Comparable<PaymentHeaderD
         this.uuid = uuid;
     }
 
-    public int getUser_id() {
-        return user_id;
-    }
-
-    public void setUser_id(int user_id) {
-        this.user_id = user_id;
-    }
-
-    public long getFiscal_year() {
+    public int getFiscal_year() {
         return fiscal_year;
     }
 
-    public void setFiscal_year(long fiscal_year) {
+    public void setFiscal_year(int fiscal_year) {
         this.fiscal_year = fiscal_year;
     }
 
-    public long getCash_box_turn_id() {
+    public int getCash_box_turn_id() {
         return cash_box_turn_id;
     }
 
-    public void setCash_box_turn_id(long cash_box_turn_id) {
+    public void setCash_box_turn_id(int cash_box_turn_id) {
         this.cash_box_turn_id = cash_box_turn_id;
     }
 
@@ -256,7 +246,6 @@ public class PaymentHeaderDTO implements Serializable, Comparable<PaymentHeaderD
         sb.append("\n id=").append(id);
         sb.append(",\n payment_id=").append(payment_id);
         sb.append(",\n uuid=").append(uuid);
-        sb.append(",\n user_id=").append(user_id);
         sb.append(",\n fiscal_year=").append(fiscal_year);
         sb.append(",\n cash_box_turn_id=").append(cash_box_turn_id);
         sb.append(",\n authorized_by=").append(authorized_by);

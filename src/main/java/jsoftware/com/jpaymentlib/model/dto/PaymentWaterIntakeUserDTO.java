@@ -5,22 +5,22 @@
 package jsoftware.com.jpaymentlib.model.dto;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 /**
  *
  * @author juanp
  */
-public class PaymentWaterIntakeUser {
+public class PaymentWaterIntakeUserDTO {
 
     private int id;
+    private int payment_id;
     private int fiscal_year;
     private int water_intake_user_id;
     private String water_intake_number;
     private String observation;
     private LocalDateTime date_register;
 
-    public PaymentWaterIntakeUser() {
+    public PaymentWaterIntakeUserDTO() {
         this.id = -1;
         this.fiscal_year = -1;
         this.water_intake_user_id = -1;
@@ -35,6 +35,14 @@ public class PaymentWaterIntakeUser {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public int getPayment_id() {
+        return payment_id;
+    }
+
+    public void setPayment_id(int payment_id) {
+        this.payment_id = payment_id;
     }
 
     public int getFiscal_year() {
@@ -79,10 +87,9 @@ public class PaymentWaterIntakeUser {
 
     @Override
     public int hashCode() {
-        int hash = 3;
-        hash = 23 * hash + this.id;
-        hash = 23 * hash + this.water_intake_user_id;
-        hash = 23 * hash + Objects.hashCode(this.water_intake_number);
+        int hash = 7;
+        hash = 29 * hash + this.id;
+        hash = 29 * hash + this.payment_id;
         return hash;
     }
 
@@ -97,21 +104,19 @@ public class PaymentWaterIntakeUser {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final PaymentWaterIntakeUser other = (PaymentWaterIntakeUser) obj;
+        final PaymentWaterIntakeUserDTO other = (PaymentWaterIntakeUserDTO) obj;
         if (this.id != other.id) {
             return false;
         }
-        if (this.water_intake_user_id != other.water_intake_user_id) {
-            return false;
-        }
-        return Objects.equals(this.water_intake_number, other.water_intake_number);
+        return this.payment_id == other.payment_id;
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("PaymentWaterIntakeUser{");
+        sb.append("PaymentWaterIntakeUserDTO{");
         sb.append("id=").append(id);
+        sb.append(", payment_id=").append(payment_id);
         sb.append(", fiscal_year=").append(fiscal_year);
         sb.append(", water_intake_user_id=").append(water_intake_user_id);
         sb.append(", water_intake_number=").append(water_intake_number);

@@ -19,14 +19,21 @@ public class PaymentDAO {
      */
     public boolean insert(JDBConnection conn, PaymentDTO dto) throws SQLException, PaymentException {
         boolean res = false;
-        String sql = "INSERT INTO pym_payment (payment_type_id, sequence, line, status) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO pym_payment (user_id, payment_type_id, payment_method_id, sequence, line, observation, status, committee_id, office_id, administration_id, last_employee_update) "
+                + "VALUES (?,?,?,?,?,?,?,?,?,?,?)";
 
         try (PreparedStatement ps = conn.getNewPreparedStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setInt(1, dto.getPayment_type_id());
-            ps.setString(2, dto.getSequence());
-            ps.setString(3, dto.getLine());
-            ps.setInt(4, dto.getStatus());
-
+            ps.setInt(1, dto.getUser_id());
+            ps.setInt(2, dto.getPayment_type_id());
+            ps.setInt(3, dto.getPayment_method_id());
+            ps.setString(4, dto.getSequence());
+            ps.setString(5, dto.getLine());
+            ps.setString(6, dto.getObservation());
+            ps.setInt(7, dto.getStatus());
+            ps.setInt(8, dto.getCommittee_id());
+            ps.setInt(9, dto.getOffice_id());
+            ps.setInt(10, dto.getAdministration_id());
+            ps.setInt(11, dto.getLast_employee_update());
             int affectedRows = ps.executeUpdate();
             res = affectedRows == 1;
 

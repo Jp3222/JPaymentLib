@@ -20,6 +20,7 @@ public class PaymentInputDTO implements Serializable {
     private int committee_id;
     private int office_id;
     private int status_id;
+    private int administration_id;
 
     //DATOS DE AUDITORIA
     private int employee_id;
@@ -27,6 +28,7 @@ public class PaymentInputDTO implements Serializable {
     //DATOS DEL CONTRIBUYENTE
     private int water_intake_user_id;
     private int user_id;
+    private String user_name;
     private String water_intake_number;
 
     // DATOS PARA EL COBRO DE MENSUALIDADES //
@@ -43,13 +45,15 @@ public class PaymentInputDTO implements Serializable {
     // TIPO DE SERVICIO A USAR //
     private int service_type;
 
-    public PaymentInputDTO(PaymentInputBuilder builder) {
+    protected PaymentInputDTO(PaymentInputBuilder builder) {
         this.committee_id = builder.getCommittee_id();
         this.office_id = builder.getOffice_id();
         this.status_id = builder.getStatus_id();
+        this.administration_id = builder.getAdministration_id();
         this.employee_id = builder.getEmployee_id();
         this.water_intake_user_id = builder.getWater_intake_user_id();
         this.user_id = builder.getUser_id();
+        this.user_name = builder.getUser_name();
         this.water_intake_number = builder.getWater_intake_number();
         this.month_list = builder.getMonth_list();
         this.months_paid = builder.getMonths_paid();
@@ -75,6 +79,14 @@ public class PaymentInputDTO implements Serializable {
         return status_id;
     }
 
+    public int getAdministration_id() {
+        return administration_id;
+    }
+
+    public void setAdministration_id(int administration_id) {
+        this.administration_id = administration_id;
+    }
+
     public int getEmployee_id() {
         return employee_id;
     }
@@ -85,6 +97,10 @@ public class PaymentInputDTO implements Serializable {
 
     public int getUser_id() {
         return user_id;
+    }
+
+    public String getUser_name() {
+        return user_name;
     }
 
     public String getWater_intake_number() {

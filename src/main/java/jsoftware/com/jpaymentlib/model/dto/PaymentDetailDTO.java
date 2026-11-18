@@ -20,6 +20,7 @@ public class PaymentDetailDTO implements Serializable, Comparable<PaymentDetailD
     private int no;
     private int payment_concept_id;
     private int specification_id;
+    private String concept;
     private String description;
     private String observation;
     private LocalDate period_date;
@@ -93,6 +94,14 @@ public class PaymentDetailDTO implements Serializable, Comparable<PaymentDetailD
 
     public void setSpecification_id(int specification_id) {
         this.specification_id = specification_id;
+    }
+
+    public String getConcept() {
+        return concept;
+    }
+
+    public void setConcept(String concept) {
+        this.concept = concept;
     }
 
     public String getDescription() {

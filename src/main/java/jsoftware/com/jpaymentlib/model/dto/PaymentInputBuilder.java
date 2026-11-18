@@ -19,6 +19,7 @@ public class PaymentInputBuilder {
     private int committee_id;
     private int office_id;
     private int status_id;
+    private int administration_id;
 
     //DATOS DE AUDITORIA
     private int employee_id;
@@ -26,6 +27,7 @@ public class PaymentInputBuilder {
     //DATOS DEL CONTRIBUYENTE
     private int water_intake_user_id;
     private int user_id;
+    private String user_name;
     private String water_intake_number;
 
     // DATOS PARA EL COBRO DE MENSUALIDADES //
@@ -49,6 +51,7 @@ public class PaymentInputBuilder {
         this.employee_id = -1;
         this.water_intake_user_id = -1;
         this.user_id = -1;
+        this.user_name = null;
         this.water_intake_number = null;
         this.month_list = null;
         this.months_paid = -1;
@@ -84,6 +87,15 @@ public class PaymentInputBuilder {
         return this;
     }
 
+    public int getAdministration_id() {
+        return administration_id;
+    }
+
+    public PaymentInputBuilder setAdministration_id(int administration_id) {
+        this.administration_id = administration_id;
+        return this;
+    }
+
     public int getEmployee_id() {
         return employee_id;
     }
@@ -108,6 +120,15 @@ public class PaymentInputBuilder {
 
     public PaymentInputBuilder setUser_id(int user_id) {
         this.user_id = user_id;
+        return this;
+    }
+
+    public String getUser_name() {
+        return user_name;
+    }
+
+    public PaymentInputBuilder setUser_name(String user_name) {
+        this.user_name = user_name;
         return this;
     }
 

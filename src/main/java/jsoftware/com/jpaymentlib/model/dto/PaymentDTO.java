@@ -26,6 +26,7 @@ public class PaymentDTO implements Serializable, Comparable<PaymentDTO> {
     private int status;
     private int committee_id;
     private int office_id;
+    private int administration_id;
     private int last_employee_update;
     private LocalDateTime date_update;
     private LocalDateTime date_register;
@@ -42,6 +43,7 @@ public class PaymentDTO implements Serializable, Comparable<PaymentDTO> {
         this.status = -1;
         this.committee_id = -1;
         this.office_id = -1;
+        this.administration_id = -1;
         this.last_employee_update = -1;
         this.date_update = null;
         this.date_register = null;
@@ -128,6 +130,14 @@ public class PaymentDTO implements Serializable, Comparable<PaymentDTO> {
         this.office_id = office_id;
     }
 
+    public int getAdministration_id() {
+        return administration_id;
+    }
+
+    public void setAdministration_id(int administration_id) {
+        this.administration_id = administration_id;
+    }
+
     public int getLast_employee_update() {
         return last_employee_update;
     }
@@ -190,7 +200,6 @@ public class PaymentDTO implements Serializable, Comparable<PaymentDTO> {
         return Objects.equals(this.line, other.line);
     }
 
-  
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -205,6 +214,7 @@ public class PaymentDTO implements Serializable, Comparable<PaymentDTO> {
         sb.append(", status=").append(status);
         sb.append(", committee_id=").append(committee_id);
         sb.append(", office_id=").append(office_id);
+        sb.append(", administration_id=").append(administration_id);
         sb.append(", last_employee_update=").append(last_employee_update);
         sb.append(", date_update=").append(date_update);
         sb.append(", date_register=").append(date_register);

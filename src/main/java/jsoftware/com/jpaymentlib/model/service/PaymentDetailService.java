@@ -182,14 +182,14 @@ public class PaymentDetailService extends AbstractService {
             detail.setSpecification_id(specification.getId()); // SOLUCIÓN 4: Extraer el ID plano
             detail.setPayment_concept_id(concept.getId());
             detail.setFiscal_year(now.getYear());
-
+            detail.setConcept(concept.getName());
             PaymentImportDTO imports = i.getImports();
 
             // Instancia del motor analítico
             Payment pym = new Payment(i);
             i.setCurrent_month(k);
             BigDecimal total = pym.calculation();
-            detail.setDescription("MENSUALIDAD DEL MES DE: " + specification_service.getMonths().get(k - 1).getMonth_name());
+            detail.setDescription("MENSUALIDAD DEL MES DE " + specification_service.getMonths().get(k - 1).getMonth_name());
             String toString = pym.getObservations() + ", " + specification_service.getMonths().get(k - 1).getShort_name();
             detail.setObservation(toString);
             if (toString.contains("S/C")) {

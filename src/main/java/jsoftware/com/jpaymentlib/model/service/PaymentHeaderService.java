@@ -2,6 +2,7 @@ package jsoftware.com.jpaymentlib.model.service;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import jsoftware.com.jblue.model.abst.AbstractService;
@@ -91,6 +92,7 @@ public class PaymentHeaderService extends AbstractService {
         header.setApply_discount(discount.compareTo(BigDecimal.ZERO) > 0);
         header.setApply_surcharge(surcharge.compareTo(BigDecimal.ZERO) > 0);
         header.setStatus(1);
+        header.setFiscal_year(LocalDate.now().getYear());
         return Optional.of(header);
     }
 
