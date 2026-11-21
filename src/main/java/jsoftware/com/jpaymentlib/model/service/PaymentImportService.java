@@ -37,7 +37,7 @@ public class PaymentImportService extends AbstractService {
     public boolean save(JDBConnection connection, SystemSession ss, PaymentImportDTO dto) {
         boolean res = false;
         try {
-            int final_employee = Integer.parseInt(ss.getCurrentEmployee().getId());
+            int final_employee = ss.getCurrentEmployee().getId();
             int final_admin = Integer.parseInt(ss.getCurrentAdministration().getId());
 
             dto.setAdministration_id(final_admin);

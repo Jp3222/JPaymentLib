@@ -47,7 +47,7 @@ public class PaymentConceptService extends AbstractService {
                 return returnMessageError("NO SE PUDO GENERAR EL FOLIO DEL CONCEPTO");
             }
 
-            int final_employee = Integer.parseInt(ss.getCurrentEmployee().getId());
+            int final_employee = ss.getCurrentEmployee().getId();
             int final_office = Integer.parseInt(ss.getCurrent_instance().getOfficeId());
 
             // 1. Concepto
